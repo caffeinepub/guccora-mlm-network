@@ -18,11 +18,13 @@ import { ProfilePage } from "./pages/Profile";
 import { RegisterPage } from "./pages/Register";
 import { WalletPage } from "./pages/Wallet";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboard";
+import { AdminIncomeReportsPage } from "./pages/admin/AdminIncomeReports";
 import { AdminLoginPage } from "./pages/admin/AdminLogin";
 import { AdminPaymentsPage } from "./pages/admin/AdminPayments";
 import { AdminPlansPage } from "./pages/admin/AdminPlans";
 import { AdminProductsPage } from "./pages/admin/AdminProducts";
 import { AdminRegistrationsPage } from "./pages/admin/AdminRegistrations";
+import { AdminSettingsPage } from "./pages/admin/AdminSettings";
 import { AdminTreePage } from "./pages/admin/AdminTree";
 import { AdminUsersPage } from "./pages/admin/AdminUsers";
 import { AdminWithdrawalsPage } from "./pages/admin/AdminWithdrawals";
@@ -154,6 +156,18 @@ const adminTreeRoute = createRoute({
   component: AdminTreePage,
 });
 
+const adminIncomeRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/income",
+  component: AdminIncomeReportsPage,
+});
+
+const adminSettingsRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/settings",
+  component: AdminSettingsPage,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
@@ -175,6 +189,8 @@ const routeTree = rootRoute.addChildren([
     adminPlansRoute,
     adminProductsRoute,
     adminTreeRoute,
+    adminIncomeRoute,
+    adminSettingsRoute,
   ]),
 ]);
 

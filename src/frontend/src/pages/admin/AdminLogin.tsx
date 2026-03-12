@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "@tanstack/react-router";
-import { Loader2, Lock } from "lucide-react";
+import { Loader2, Lock, User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createActorWithConfig } from "../../config";
@@ -10,12 +10,17 @@ import { setAdminToken } from "../../utils/format";
 
 export function AdminLoginPage() {
   const navigate = useNavigate();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!password) {
-      toast.error("Enter admin password");
+    if (!username || !password) {
+      toast.error("Enter username and password");
+      return;
+    }
+    if (username !== "admin") {
+      toast.error("Invalid credentials");
       return;
     }
     setLoading(true);
@@ -23,7 +28,7 @@ export function AdminLoginPage() {
       const actor = await createActorWithConfig();
       const token = await actor.adminLogin(password);
       if (!token) {
-        toast.error("Invalid password");
+        toast.error("Invalid credentials");
         return;
       }
       setAdminToken(token);
@@ -57,6 +62,23 @@ export function AdminLoginPage() {
             Restricted access
           </p>
           <div className="space-y-4">
+            <div>
+              <Label className="text-sm text-foreground/80 mb-1.5 block">
+                Username
+              </Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  data-ocid="admin.username_input"
+                  type="text"
+                  placeholder="Admin username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                  className="pl-9 bg-input border-border text-foreground"
+                />
+              </div>
+            </div>
             <div>
               <Label className="text-sm text-foreground/80 mb-1.5 block">
                 Password

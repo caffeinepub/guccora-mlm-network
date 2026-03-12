@@ -7,13 +7,13 @@ import {
 } from "@tanstack/react-router";
 import {
   CreditCard,
-  GitFork,
   LayoutDashboard,
   LogOut,
   Menu,
   Package,
+  Settings,
   ShoppingBag,
-  UserCheck,
+  TrendingUp,
   Users,
   Wallet,
   X,
@@ -23,13 +23,17 @@ import { clearAdminToken, getAdminToken } from "../utils/format";
 
 const adminNav = [
   { to: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/admin/registrations", icon: UserCheck, label: "Registrations" },
   { to: "/admin/users", icon: Users, label: "Users" },
-  { to: "/admin/payments", icon: CreditCard, label: "Payments" },
-  { to: "/admin/withdrawals", icon: Wallet, label: "Withdrawals" },
-  { to: "/admin/plans", icon: Package, label: "Plans" },
-  { to: "/admin/products", icon: ShoppingBag, label: "Products" },
-  { to: "/admin/tree", icon: GitFork, label: "Binary Tree" },
+  {
+    to: "/admin/registrations",
+    icon: CreditCard,
+    label: "Payments Verification",
+  },
+  { to: "/admin/products", icon: ShoppingBag, label: "Products Management" },
+  { to: "/admin/plans", icon: Package, label: "Plans Management" },
+  { to: "/admin/income", icon: TrendingUp, label: "Income Reports" },
+  { to: "/admin/withdrawals", icon: Wallet, label: "Withdraw Requests" },
+  { to: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
 export function AdminLayout() {
@@ -52,7 +56,7 @@ export function AdminLayout() {
   return (
     <div className="min-h-screen bg-mesh flex">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-60 border-r border-border bg-sidebar sticky top-0 h-screen">
+      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-sidebar sticky top-0 h-screen">
         <div className="p-4 border-b border-border">
           <img
             src="/assets/generated/guccora-logo-transparent.dim_400x120.png"
@@ -68,14 +72,14 @@ export function AdminLayout() {
               <Link
                 key={to}
                 to={to}
-                data-ocid={`admin.${label.toLowerCase().replace(" ", "_")}.link`}
+                data-ocid={`admin.nav.${label.toLowerCase().replace(/\s+/g, "_")}.link`}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-primary/20 text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4 shrink-0" />
                 {label}
               </Link>
             );
@@ -129,7 +133,7 @@ export function AdminLayout() {
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-accent"
               >
-                <Icon className="h-5 w-5 text-primary" />
+                <Icon className="h-5 w-5 text-primary shrink-0" />
                 <span className="font-medium">{label}</span>
               </Link>
             ))}
