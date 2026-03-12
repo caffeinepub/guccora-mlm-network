@@ -196,7 +196,7 @@ actor {
   var userProfiles = Map.empty<Principal, UserProfile>();
 
   // Admin credentials
-  let ADMIN_PASSWORD = "Guccora@123";
+  let ADMIN_PASSWORD = "Admin@123";
   var adminSessionsMap = Map.empty<SessionToken, Bool>();
 
   // Counters
