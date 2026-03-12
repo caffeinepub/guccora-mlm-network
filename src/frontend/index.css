@@ -1,0 +1,103 @@
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/assets/fonts/PlayfairDisplay-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  src: url('/assets/fonts/Outfit-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0.10 0.04 290;
+    --foreground: 0.95 0.02 285;
+    --card: 0.16 0.06 290;
+    --card-foreground: 0.95 0.02 285;
+    --popover: 0.18 0.06 290;
+    --popover-foreground: 0.95 0.02 285;
+    --primary: 0.78 0.14 85;
+    --primary-foreground: 0.15 0.02 60;
+    --secondary: 0.25 0.08 290;
+    --secondary-foreground: 0.90 0.05 85;
+    --muted: 0.20 0.04 290;
+    --muted-foreground: 0.62 0.05 285;
+    --accent: 0.28 0.10 290;
+    --accent-foreground: 0.90 0.10 85;
+    --destructive: 0.58 0.22 25;
+    --destructive-foreground: 0.98 0.01 20;
+    --border: 0.26 0.07 290;
+    --input: 0.22 0.06 290;
+    --ring: 0.78 0.14 85;
+    --radius: 0.75rem;
+    --chart-1: 0.78 0.14 85;
+    --chart-2: 0.65 0.18 60;
+    --chart-3: 0.55 0.20 290;
+    --chart-4: 0.70 0.15 140;
+    --chart-5: 0.60 0.18 25;
+    --sidebar: 0.13 0.06 290;
+    --sidebar-foreground: 0.90 0.03 285;
+    --sidebar-primary: 0.78 0.14 85;
+    --sidebar-primary-foreground: 0.15 0.02 60;
+    --sidebar-accent: 0.22 0.08 290;
+    --sidebar-accent-foreground: 0.90 0.10 85;
+    --sidebar-border: 0.24 0.07 290;
+    --sidebar-ring: 0.78 0.14 85;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, oklch(0.82 0.16 85), oklch(0.68 0.18 65));
+}
+
+.purple-gradient {
+  background: linear-gradient(135deg, oklch(0.22 0.12 290), oklch(0.14 0.08 290));
+}
+
+.card-glow {
+  box-shadow: 0 0 0 1px oklch(0.78 0.14 85 / 0.15), 0 4px 24px oklch(0.78 0.14 85 / 0.08);
+}
+
+.gold-glow {
+  box-shadow: 0 0 20px oklch(0.78 0.14 85 / 0.30), 0 2px 8px oklch(0.78 0.14 85 / 0.20);
+}
+
+.bg-mesh {
+  background-color: oklch(0.10 0.04 290);
+  background-image:
+    radial-gradient(at 20% 20%, oklch(0.22 0.12 290 / 0.5) 0px, transparent 50%),
+    radial-gradient(at 80% 80%, oklch(0.18 0.10 300 / 0.4) 0px, transparent 50%),
+    radial-gradient(at 50% 10%, oklch(0.78 0.14 85 / 0.06) 0px, transparent 40%);
+}
+
+.tree-node {
+  @apply relative flex flex-col items-center;
+}
+
+.tree-connector::before {
+  content: '';
+  @apply absolute top-0 left-1/2 w-px h-8;
+  background: linear-gradient(to bottom, oklch(0.78 0.14 85 / 0.6), oklch(0.78 0.14 85 / 0.2));
+  transform: translateX(-50%);
+}
