@@ -10,14 +10,14 @@ import {
   Eye,
   EyeOff,
   Hash,
-  ImageIcon,
   KeyRound,
   Loader2,
   MessageSquare,
   Phone,
+  Upload,
   User,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Plan } from "../backend.d";
 import { createActorWithConfig } from "../config";
@@ -26,9 +26,15 @@ import { formatCurrency } from "../utils/format";
 
 const STEP_LABELS = ["Details", "Verify OTP", "Plan", "Payment"];
 
+const PAYMENT_INSTRUCTIONS = [
+  "Scan the QR code using PhonePe, Google Pay, Paytm or BHIM",
+  "Pay the activation amount \u20b9599",
+  "After payment, enter the Transaction ID below",
+  "Upload your payment screenshot",
+];
+
 export function RegisterPage() {
   const navigate = useNavigate();
-  // Read ref from URL search params
   const refCode = new URLSearchParams(window.location.search).get("ref") ?? "";
 
   const { data: plans = [] } = usePlans();
@@ -45,9 +51,12 @@ export function RegisterPage() {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [upiRef, setUpiRef] = useState("");
   const [screenshotUrl, setScreenshotUrl] = useState("");
+  const [screenshotFileName, setScreenshotFileName] = useState("");
   const [loading, setLoading] = useState(false);
   const [upiCopied, setUpiCopied] = useState(false);
   const [registered, setRegistered] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (refCode) setSponsorCode(refCode);
@@ -70,7 +79,6 @@ export function RegisterPage() {
       toast.error("Passwords do not match");
       return;
     }
-    // Send OTP
     setOtpLoading(true);
     try {
       const actor = await createActorWithConfig();
@@ -162,6 +170,20 @@ export function RegisterPage() {
     });
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScreenshotFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result;
+      if (typeof result === "string") {
+        setScreenshotUrl(result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const staticPlans = [
     {
       id: BigInt(1),
@@ -190,7 +212,6 @@ export function RegisterPage() {
   ];
   const displayPlans = plans.length > 0 ? plans : staticPlans;
 
-  // Registration success
   if (registered) {
     return (
       <div className="min-h-screen bg-mesh flex flex-col items-center justify-center px-5 py-8">
@@ -561,18 +582,35 @@ export function RegisterPage() {
               <div className="flex flex-col items-center gap-2">
                 <div className="bg-white p-3 rounded-2xl shadow-lg border-2 border-yellow-400/40">
                   <img
-                    src="/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1.png"
+                    src="/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1-1.png"
                     alt="UPI QR Code - Scan to pay"
                     className="w-56 h-56 object-contain"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
-                        "/assets/generated/upi-qr-code.dim_400x450.png";
+                        "/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1.png";
                     }}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Scan QR code with any UPI app
                 </p>
+              </div>
+
+              {/* Payment Instructions */}
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 space-y-2">
+                <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wide mb-1">
+                  How to Pay
+                </p>
+                {PAYMENT_INSTRUCTIONS.map((instruction, idx) => (
+                  <div key={instruction} className="flex items-start gap-2.5">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-yellow-500/30 text-yellow-300 text-[10px] font-bold flex items-center justify-center mt-0.5">
+                      {idx + 1}
+                    </span>
+                    <p className="text-xs text-foreground/80 leading-relaxed">
+                      {instruction}
+                    </p>
+                  </div>
+                ))}
               </div>
 
               {/* UPI ID & Name */}
@@ -601,7 +639,7 @@ export function RegisterPage() {
               </div>
 
               {/* Payment app badges */}
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-2 flex-wrap">
                 <span
                   className="px-3 py-1 rounded-full text-xs font-semibold text-white"
                   style={{ backgroundColor: "#5f259f" }}
@@ -619,6 +657,12 @@ export function RegisterPage() {
                   style={{ backgroundColor: "#00a0e3" }}
                 >
                   Paytm
+                </span>
+                <span
+                  className="px-3 py-1 rounded-full text-xs font-semibold text-white"
+                  style={{ backgroundColor: "#FF6600" }}
+                >
+                  BHIM
                 </span>
               </div>
 
@@ -644,24 +688,47 @@ export function RegisterPage() {
                 </p>
               </div>
 
-              {/* Screenshot URL */}
+              {/* Screenshot Upload */}
               <div>
                 <Label className="text-sm text-foreground/80 mb-1 block">
-                  Payment Screenshot URL{" "}
+                  Upload Payment Screenshot{" "}
                   <span className="text-muted-foreground text-xs">
                     (optional)
                   </span>
                 </Label>
-                <div className="relative">
-                  <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    data-ocid="register.screenshot_input"
-                    placeholder="Paste image link (Google Drive, etc.)"
-                    value={screenshotUrl}
-                    onChange={(e) => setScreenshotUrl(e.target.value)}
-                    className="pl-9 bg-input border-border text-foreground placeholder:text-muted-foreground"
-                  />
-                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <button
+                  type="button"
+                  data-ocid="register.screenshot_upload_button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-dashed border-border bg-accent/20 hover:border-primary/60 hover:bg-accent/40 transition-all text-left"
+                >
+                  <Upload className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-sm text-muted-foreground">
+                    {screenshotFileName
+                      ? screenshotFileName
+                      : "Tap to upload screenshot"}
+                  </span>
+                </button>
+                {screenshotUrl?.startsWith("data:") && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <img
+                      src={screenshotUrl}
+                      alt="Payment screenshot preview"
+                      className="rounded-lg object-cover border border-border"
+                      style={{ maxHeight: "80px" }}
+                    />
+                    <span className="text-xs text-green-400 font-medium">
+                      Screenshot selected ✓
+                    </span>
+                  </div>
+                )}
               </div>
 
               <Button
@@ -673,7 +740,7 @@ export function RegisterPage() {
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : null}
-                {loading ? "Submitting..." : "Submit Registration"}
+                {loading ? "Submitting..." : "Submit Payment"}
               </Button>
 
               <p className="text-[11px] text-center text-muted-foreground">

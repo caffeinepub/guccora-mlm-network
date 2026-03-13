@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle, ExternalLink, UserCheck, XCircle } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { PaymentStatus } from "../../backend.d";
 import {
@@ -14,6 +15,7 @@ export function AdminRegistrationsPage() {
   const { data: registrations = [], isLoading } =
     useAdminPendingRegistrations();
   const approveRegistration = useAdminApproveRegistration();
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const handleAction = async (userId: string, approved: boolean) => {
     try {
@@ -61,10 +63,39 @@ export function AdminRegistrationsPage() {
 
   return (
     <div className="p-6">
+      {/* Lightbox overlay */}
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          data-ocid="admin.registrations.modal"
+        >
+          <img
+            src={lightboxSrc}
+            alt="Payment screenshot"
+            className="max-w-[90vw] max-h-[85vh] rounded-xl shadow-2xl border-2 border-yellow-400/30 object-contain"
+          />
+          <button
+            type="button"
+            className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl font-bold leading-none"
+            onClick={() => setLightboxSrc(null)}
+            data-ocid="admin.registrations.close_button"
+          >
+            &times;
+          </button>
+          {/* Backdrop click to close */}
+          <button
+            type="button"
+            aria-label="Close screenshot"
+            className="absolute inset-0 -z-10 w-full h-full cursor-default"
+            onClick={() => setLightboxSrc(null)}
+          />
+        </div>
+      )}
+
       <div className="flex items-center gap-3 mb-5">
         <UserCheck className="h-6 w-6 text-primary" />
         <h1 className="font-display text-2xl font-bold text-foreground">
-          New Registrations
+          Payments Verification
         </h1>
         {pending.length > 0 && (
           <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
@@ -119,10 +150,10 @@ export function AdminRegistrationsPage() {
                     </div>
                     <div>
                       <p className="text-[11px] text-muted-foreground">
-                        UTR Number
+                        Transaction ID
                       </p>
                       <p className="text-sm font-mono text-foreground/80">
-                        {reg.utrNumber || "—"}
+                        {reg.utrNumber || "\u2014"}
                       </p>
                     </div>
                     <div>
@@ -134,7 +165,34 @@ export function AdminRegistrationsPage() {
                       </p>
                     </div>
                   </div>
-                  {reg.screenshotUrl && (
+
+                  {/* Screenshot display - base64 */}
+                  {reg.screenshotUrl?.startsWith("data:") && (
+                    <div className="mt-3">
+                      <p className="text-[11px] text-muted-foreground mb-1">
+                        Payment Screenshot
+                      </p>
+                      <button
+                        type="button"
+                        data-ocid={`admin.registrations.screenshot_button.${i + 1}`}
+                        className="block rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity p-0 bg-transparent"
+                        onClick={() => setLightboxSrc(reg.screenshotUrl)}
+                      >
+                        <img
+                          src={reg.screenshotUrl}
+                          alt="Payment screenshot"
+                          className="rounded-lg object-cover"
+                          style={{ maxHeight: "120px" }}
+                        />
+                      </button>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Tap to view full size
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Screenshot display - external link */}
+                  {reg.screenshotUrl?.startsWith("http") && (
                     <a
                       href={reg.screenshotUrl}
                       target="_blank"
