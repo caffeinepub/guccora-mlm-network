@@ -238,25 +238,25 @@ export enum PaymentStatus {
 }
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
-    addProduct(name: string, description: string, price: bigint, imageUrl: string): Promise<bigint>;
+    addProduct(adminToken: string, name: string, description: string, price: bigint, imageUrl: string): Promise<bigint>;
     addUserBinaryPosition(userId: UserId, parentId: UserId, position: Position): Promise<void>;
-    adminActivateUser(userId: UserId, isActive: boolean): Promise<void>;
-    adminApproveRegistration(userId: UserId, approved: boolean): Promise<void>;
-    adminApproveWithdraw(txId: bigint, approved: boolean): Promise<void>;
-    adminDeleteUser(userId: string): Promise<void>;
-    adminUpdateUser(userId: string, fullName: string, mobile: string): Promise<void>;
-    adminGetPayments(): Promise<Array<Payment>>;
-    adminGetPendingRegistrations(): Promise<Array<UserRegistrationDto>>;
-    adminGetProducts(): Promise<Array<Product>>;
-    adminGetTotalBusiness(): Promise<{
+    adminActivateUser(adminToken: string, userId: UserId, isActive: boolean): Promise<void>;
+    adminApproveRegistration(adminToken: string, userId: UserId, approved: boolean): Promise<void>;
+    adminApproveWithdraw(adminToken: string, txId: bigint, approved: boolean): Promise<void>;
+    adminDeleteUser(adminToken: string, userId: string): Promise<void>;
+    adminUpdateUser(adminToken: string, userId: string, fullName: string, mobile: string): Promise<void>;
+    adminGetPayments(adminToken: string): Promise<Array<Payment>>;
+    adminGetPendingRegistrations(adminToken: string): Promise<Array<UserRegistrationDto>>;
+    adminGetProducts(adminToken: string): Promise<Array<Product>>;
+    adminGetTotalBusiness(adminToken: string): Promise<{
         totalIncomeDistributed: bigint;
         totalPlansSold: bigint;
         totalUsers: bigint;
         totalWithdrawals: bigint;
     }>;
     adminLogin(password: string): Promise<SessionToken>;
-    adminUserList(): Promise<Array<UserDto>>;
-    adminVerifyPayment(paymentId: bigint, verified: boolean): Promise<void>;
+    adminUserList(adminToken: string): Promise<Array<UserDto>>;
+    adminVerifyPayment(adminToken: string, paymentId: bigint, verified: boolean): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     calculateBinaryIncome(userId: UserId): Promise<bigint>;
     getBinaryTree(userId: UserId): Promise<{
@@ -279,7 +279,7 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     sendOTP(mobile: string): Promise<string>;
     submitPayment(sessionToken: SessionToken, planId: bigint, upiRef: string): Promise<bigint>;
-    updateProduct(productId: bigint, name: string, description: string, price: bigint, imageUrl: string, isActive: boolean): Promise<void>;
+    updateProduct(adminToken: string, productId: bigint, name: string, description: string, price: bigint, imageUrl: string, isActive: boolean): Promise<void>;
     updateUserProfile(sessionToken: SessionToken, fullName: string): Promise<void>;
     verifyOTP(mobile: string, otp: string): Promise<boolean>;
     withdrawRequest(sessionToken: SessionToken, amount: bigint): Promise<bigint>;
@@ -301,17 +301,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async addProduct(arg0: string, arg1: string, arg2: bigint, arg3: string): Promise<bigint> {
+    async addProduct(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string): Promise<bigint> {
         if (this.processError) {
             try {
-                const result = await this.actor.addProduct(arg0, arg1, arg2, arg3);
+                const result = await this.actor.addProduct(arg0, arg1, arg2, arg3, arg4);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addProduct(arg0, arg1, arg2, arg3);
+            const result = await this.actor.addProduct(arg0, arg1, arg2, arg3, arg4);
             return result;
         }
     }
@@ -329,97 +329,97 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async adminActivateUser(arg0: UserId, arg1: boolean): Promise<void> {
+    async adminActivateUser(arg0: string, arg1: UserId, arg2: boolean): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.adminActivateUser(arg0, arg1);
+                const result = await this.actor.adminActivateUser(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.adminActivateUser(arg0, arg1);
+            const result = await this.actor.adminActivateUser(arg0, arg1, arg2);
             return result;
         }
     }
-    async adminApproveRegistration(arg0: UserId, arg1: boolean): Promise<void> {
+    async adminApproveRegistration(arg0: string, arg1: UserId, arg2: boolean): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.adminApproveRegistration(arg0, arg1);
+                const result = await this.actor.adminApproveRegistration(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.adminApproveRegistration(arg0, arg1);
+            const result = await this.actor.adminApproveRegistration(arg0, arg1, arg2);
             return result;
         }
     }
-    async adminApproveWithdraw(arg0: bigint, arg1: boolean): Promise<void> {
+    async adminApproveWithdraw(arg0: string, arg1: bigint, arg2: boolean): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.adminApproveWithdraw(arg0, arg1);
+                const result = await this.actor.adminApproveWithdraw(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.adminApproveWithdraw(arg0, arg1);
+            const result = await this.actor.adminApproveWithdraw(arg0, arg1, arg2);
             return result;
         }
     }
-    async adminDeleteUser(arg0: string): Promise<void> {
-        try { await (this.actor as any).adminDeleteUser(arg0); } catch (e) { if (this.processError) this.processError(e); }
+    async adminDeleteUser(arg0: string, arg1: string): Promise<void> {
+        try { await (this.actor as any).adminDeleteUser(arg0, arg1); } catch (e) { if (this.processError) this.processError(e); }
     }
-    async adminUpdateUser(arg0: string, arg1: string, arg2: string): Promise<void> {
-        try { await (this.actor as any).adminUpdateUser(arg0, arg1, arg2); } catch (e) { if (this.processError) this.processError(e); }
+    async adminUpdateUser(arg0: string, arg1: string, arg2: string, arg3: string): Promise<void> {
+        try { await (this.actor as any).adminUpdateUser(arg0, arg1, arg2, arg3); } catch (e) { if (this.processError) this.processError(e); }
     }
-    async adminGetPayments(): Promise<Array<Payment>> {
+    async adminGetPayments(arg0: string): Promise<Array<Payment>> {
         if (this.processError) {
             try {
-                const result = await this.actor.adminGetPayments();
+                const result = await this.actor.adminGetPayments(arg0);
                 return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.adminGetPayments();
+            const result = await this.actor.adminGetPayments(arg0);
             return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
         }
     }
-    async adminGetPendingRegistrations(): Promise<Array<UserRegistrationDto>> {
+    async adminGetPendingRegistrations(arg0: string): Promise<Array<UserRegistrationDto>> {
         if (this.processError) {
             try {
-                const result = await this.actor.adminGetPendingRegistrations();
+                const result = await this.actor.adminGetPendingRegistrations(arg0);
                 return from_candid_vec_registrations(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.adminGetPendingRegistrations();
+            const result = await this.actor.adminGetPendingRegistrations(arg0);
             return from_candid_vec_registrations(this._uploadFile, this._downloadFile, result);
         }
     }
-    async adminGetProducts(): Promise<Array<Product>> {
+    async adminGetProducts(arg0: string): Promise<Array<Product>> {
         if (this.processError) {
             try {
-                const result = await this.actor.adminGetProducts();
+                const result = await this.actor.adminGetProducts(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.adminGetProducts();
+            const result = await this.actor.adminGetProducts(arg0);
             return result;
         }
     }
-    async adminGetTotalBusiness(): Promise<{
+    async adminGetTotalBusiness(arg0: string): Promise<{
         totalIncomeDistributed: bigint;
         totalPlansSold: bigint;
         totalUsers: bigint;
@@ -427,14 +427,14 @@ export class Backend implements backendInterface {
     }> {
         if (this.processError) {
             try {
-                const result = await this.actor.adminGetTotalBusiness();
+                const result = await this.actor.adminGetTotalBusiness(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.adminGetTotalBusiness();
+            const result = await this.actor.adminGetTotalBusiness(arg0);
             return result;
         }
     }
@@ -452,31 +452,31 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async adminUserList(): Promise<Array<UserDto>> {
+    async adminUserList(arg0: string): Promise<Array<UserDto>> {
         if (this.processError) {
             try {
-                const result = await this.actor.adminUserList();
+                const result = await this.actor.adminUserList(arg0);
                 return from_candid_vec_userdto(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.adminUserList();
+            const result = await this.actor.adminUserList(arg0);
             return from_candid_vec_userdto(this._uploadFile, this._downloadFile, result);
         }
     }
-    async adminVerifyPayment(arg0: bigint, arg1: boolean): Promise<void> {
+    async adminVerifyPayment(arg0: string, arg1: bigint, arg2: boolean): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.adminVerifyPayment(arg0, arg1);
+                const result = await this.actor.adminVerifyPayment(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.adminVerifyPayment(arg0, arg1);
+            const result = await this.actor.adminVerifyPayment(arg0, arg1, arg2);
             return result;
         }
     }
@@ -736,17 +736,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async updateProduct(arg0: bigint, arg1: string, arg2: string, arg3: bigint, arg4: string, arg5: boolean): Promise<void> {
+    async updateProduct(arg0: string, arg1: bigint, arg2: string, arg3: string, arg4: bigint, arg5: string, arg6: boolean): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateProduct(arg0, arg1, arg2, arg3, arg4, arg5);
+                const result = await this.actor.updateProduct(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateProduct(arg0, arg1, arg2, arg3, arg4, arg5);
+            const result = await this.actor.updateProduct(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
             return result;
         }
     }

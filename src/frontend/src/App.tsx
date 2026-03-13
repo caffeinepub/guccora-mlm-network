@@ -5,6 +5,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  redirect,
 } from "@tanstack/react-router";
 
 import { AdminLayout } from "./components/AdminLayout";
@@ -108,6 +109,12 @@ const adminLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "admin-layout",
   component: AdminLayout,
+  beforeLoad: () => {
+    const token = localStorage.getItem("guccora_admin_token");
+    if (!token) {
+      throw redirect({ to: "/admin/login" });
+    }
+  },
 });
 
 const adminLoginRoute = createRoute({
@@ -134,10 +141,25 @@ const adminUsersRoute = createRoute({
   component: AdminUsersPage,
 });
 
-const adminPaymentsRoute = createRoute({
+// /admin/payments → Payments Verification (registration approval)
+const adminPaymentsVerifyRoute = createRoute({
   getParentRoute: () => adminLayoutRoute,
   path: "/admin/payments",
+  component: AdminRegistrationsPage,
+});
+
+// /admin/payment-records → actual payment records
+const adminPaymentRecordsRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/payment-records",
   component: AdminPaymentsPage,
+});
+
+// /admin/withdraw and /admin/withdrawals both go to withdrawals page
+const adminWithdrawRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/withdraw",
+  component: AdminWithdrawalsPage,
 });
 
 const adminWithdrawalsRoute = createRoute({
@@ -193,7 +215,9 @@ const routeTree = rootRoute.addChildren([
     adminDashboardRoute,
     adminRegistrationsRoute,
     adminUsersRoute,
-    adminPaymentsRoute,
+    adminPaymentsVerifyRoute,
+    adminPaymentRecordsRoute,
+    adminWithdrawRoute,
     adminWithdrawalsRoute,
     adminPlansRoute,
     adminProductsRoute,

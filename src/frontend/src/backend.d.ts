@@ -106,6 +106,17 @@ export interface DashboardStats {
     recentIncomeRecords: Array<IncomeRecord>;
     leftTeamCount: bigint;
     walletBalance: bigint;
+    directIncome: bigint;
+    binaryIncome: bigint;
+    levelIncome: bigint;
+}
+export interface AdminSettings {
+    upiId: string;
+    accountName: string;
+    activationAmount: bigint;
+    qrCodeUrl: string;
+    companyName: string;
+    supportNumber: string;
 }
 export interface UserProfile {
     userId: string;
@@ -155,27 +166,31 @@ export enum PaymentStatus {
     rejected = "rejected"
 }
 export interface backendInterface {
-    addProduct(name: string, description: string, price: bigint, imageUrl: string): Promise<bigint>;
+    addProduct(adminToken: string, name: string, description: string, price: bigint, imageUrl: string): Promise<bigint>;
     addUserBinaryPosition(userId: UserId, parentId: UserId, position: Position): Promise<void>;
-    adminActivateUser(userId: UserId, isActive: boolean): Promise<void>;
-    adminApproveRegistration(userId: UserId, approved: boolean): Promise<void>;
-    adminApproveWithdraw(txId: bigint, approved: boolean): Promise<void>;
-    adminDeleteUser(userId: string): Promise<void>;
-    adminGetPayments(): Promise<Array<Payment>>;
-    adminGetPendingRegistrations(): Promise<Array<UserRegistrationDto>>;
-    adminGetProducts(): Promise<Array<Product>>;
-    adminGetTotalBusiness(): Promise<{
+    adminActivateUser(adminToken: string, userId: UserId, isActive: boolean): Promise<void>;
+    adminApproveRegistration(adminToken: string, userId: UserId, approved: boolean): Promise<void>;
+    adminApproveWithdraw(adminToken: string, txId: bigint, approved: boolean): Promise<void>;
+    adminDeleteUser(adminToken: string, userId: string): Promise<void>;
+    adminGetPayments(adminToken: string): Promise<Array<Payment>>;
+    adminGetPendingRegistrations(adminToken: string): Promise<Array<UserRegistrationDto>>;
+    adminGetProducts(adminToken: string): Promise<Array<Product>>;
+    adminGetTotalBusiness(adminToken: string): Promise<{
         totalIncomeDistributed: bigint;
         totalPlansSold: bigint;
         totalUsers: bigint;
         totalWithdrawals: bigint;
     }>;
+    adminGetWithdrawals(adminToken: string): Promise<Array<WalletTransaction>>;
+    adminGetIncomeReports(adminToken: string): Promise<Array<IncomeRecord>>;
     adminLogin(password: string): Promise<SessionToken>;
-    adminUpdateUser(userId: string, fullName: string, mobile: string): Promise<void>;
-    adminUserList(): Promise<Array<UserDto>>;
-    adminVerifyPayment(paymentId: bigint, verified: boolean): Promise<void>;
+    adminUpdateUser(adminToken: string, userId: string, fullName: string, mobile: string): Promise<void>;
+    adminUpdateSettings(adminToken: string, upiId: string, accountName: string, activationAmount: bigint, qrCodeUrl: string, companyName: string, supportNumber: string): Promise<void>;
+    adminUserList(adminToken: string): Promise<Array<UserDto>>;
+    adminVerifyPayment(adminToken: string, paymentId: bigint, verified: boolean): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     calculateBinaryIncome(userId: UserId): Promise<bigint>;
+    getAdminSettings(): Promise<AdminSettings>;
     getBinaryTree(userId: UserId): Promise<{
         left?: UserDto;
         user: UserDto;
@@ -190,13 +205,14 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     getUserProfileById(sessionToken: SessionToken): Promise<User | null>;
     getUserWalletHistory(sessionToken: SessionToken): Promise<Array<WalletTransaction>>;
+    getMyWithdrawals(sessionToken: SessionToken): Promise<Array<WalletTransaction>>;
     isCallerAdmin(): Promise<boolean>;
     loginUserByMobile(mobile: string, otp: string): Promise<SessionToken>;
     registerUser(fullName: string, mobile: string, sponsorCode: string, planId: bigint, utrNumber: string, screenshotUrl: string, password: string): Promise<string>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     sendOTP(mobile: string): Promise<string>;
     submitPayment(sessionToken: SessionToken, planId: bigint, upiRef: string): Promise<bigint>;
-    updateProduct(productId: bigint, name: string, description: string, price: bigint, imageUrl: string, isActive: boolean): Promise<void>;
+    updateProduct(adminToken: string, productId: bigint, name: string, description: string, price: bigint, imageUrl: string, isActive: boolean): Promise<void>;
     updateUserProfile(sessionToken: SessionToken, fullName: string): Promise<void>;
     verifyOTP(mobile: string, otp: string): Promise<boolean>;
     withdrawRequest(sessionToken: SessionToken, amount: bigint): Promise<bigint>;

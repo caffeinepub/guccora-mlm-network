@@ -127,17 +127,17 @@ export const WalletTransaction = IDL.Record({
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addProduct' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
       [IDL.Nat],
       [],
     ),
   'addUserBinaryPosition' : IDL.Func([UserId, UserId, Position], [], []),
-  'adminActivateUser' : IDL.Func([UserId, IDL.Bool], [], []),
-  'adminApproveWithdraw' : IDL.Func([IDL.Nat, IDL.Bool], [], []),
-  'adminGetPayments' : IDL.Func([], [IDL.Vec(Payment)], ['query']),
-  'adminGetProducts' : IDL.Func([], [IDL.Vec(Product)], ['query']),
+  'adminActivateUser' : IDL.Func([IDL.Text, UserId, IDL.Bool], [], []),
+  'adminApproveWithdraw' : IDL.Func([IDL.Text, IDL.Nat, IDL.Bool], [], []),
+  'adminGetPayments' : IDL.Func([IDL.Text], [IDL.Vec(Payment)], ['query']),
+  'adminGetProducts' : IDL.Func([IDL.Text], [IDL.Vec(Product)], ['query']),
   'adminGetTotalBusiness' : IDL.Func(
-      [],
+      [IDL.Text],
       [
         IDL.Record({
           'totalIncomeDistributed' : IDL.Nat,
@@ -149,8 +149,8 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'adminLogin' : IDL.Func([IDL.Text], [SessionToken], []),
-  'adminUserList' : IDL.Func([], [IDL.Vec(UserDto)], ['query']),
-  'adminVerifyPayment' : IDL.Func([IDL.Nat, IDL.Bool], [], []),
+  'adminUserList' : IDL.Func([IDL.Text], [IDL.Vec(UserDto)], ['query']),
+  'adminVerifyPayment' : IDL.Func([IDL.Text, IDL.Nat, IDL.Bool], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'calculateBinaryIncome' : IDL.Func([UserId], [IDL.Nat], []),
   'getBinaryTree' : IDL.Func(
@@ -202,7 +202,7 @@ export const idlService = IDL.Service({
   'sendOTP' : IDL.Func([IDL.Text], [IDL.Text], []),
   'submitPayment' : IDL.Func([SessionToken, IDL.Nat, IDL.Text], [IDL.Nat], []),
   'updateProduct' : IDL.Func(
-      [IDL.Nat, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Bool],
+      [IDL.Text, IDL.Nat, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Bool],
       [],
       [],
     ),
@@ -333,17 +333,17 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addProduct' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
         [IDL.Nat],
         [],
       ),
     'addUserBinaryPosition' : IDL.Func([UserId, UserId, Position], [], []),
-    'adminActivateUser' : IDL.Func([UserId, IDL.Bool], [], []),
-    'adminApproveWithdraw' : IDL.Func([IDL.Nat, IDL.Bool], [], []),
-    'adminGetPayments' : IDL.Func([], [IDL.Vec(Payment)], ['query']),
-    'adminGetProducts' : IDL.Func([], [IDL.Vec(Product)], ['query']),
+    'adminActivateUser' : IDL.Func([IDL.Text, UserId, IDL.Bool], [], []),
+    'adminApproveWithdraw' : IDL.Func([IDL.Text, IDL.Nat, IDL.Bool], [], []),
+    'adminGetPayments' : IDL.Func([IDL.Text], [IDL.Vec(Payment)], ['query']),
+    'adminGetProducts' : IDL.Func([IDL.Text], [IDL.Vec(Product)], ['query']),
     'adminGetTotalBusiness' : IDL.Func(
-        [],
+        [IDL.Text],
         [
           IDL.Record({
             'totalIncomeDistributed' : IDL.Nat,
@@ -355,8 +355,8 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'adminLogin' : IDL.Func([IDL.Text], [SessionToken], []),
-    'adminUserList' : IDL.Func([], [IDL.Vec(UserDto)], ['query']),
-    'adminVerifyPayment' : IDL.Func([IDL.Nat, IDL.Bool], [], []),
+    'adminUserList' : IDL.Func([IDL.Text], [IDL.Vec(UserDto)], ['query']),
+    'adminVerifyPayment' : IDL.Func([IDL.Text, IDL.Nat, IDL.Bool], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'calculateBinaryIncome' : IDL.Func([UserId], [IDL.Nat], []),
     'getBinaryTree' : IDL.Func(
@@ -412,7 +412,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'updateProduct' : IDL.Func(
-        [IDL.Nat, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Bool],
+        [IDL.Text, IDL.Nat, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Bool],
         [],
         [],
       ),

@@ -1,16 +1,43 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Position } from "../backend.d";
+import type {
+  AdminSettings,
+  IncomeRecord,
+  Position,
+  WalletTransaction,
+} from "../backend.d";
 import { getAdminToken, getToken } from "../utils/format";
 import { useActor } from "./useActor";
 
+// Extended dashboard stats type with new income fields
+export interface ExtendedDashboardStats {
+  directReferrals: bigint;
+  rightTeamCount: bigint;
+  totalIncome: bigint;
+  totalTeam: bigint;
+  recentIncomeRecords: Array<IncomeRecord>;
+  leftTeamCount: bigint;
+  walletBalance: bigint;
+  directIncome: bigint;
+  binaryIncome: bigint;
+  levelIncome: bigint;
+}
+
 export function useUserDashboard() {
   const { actor, isFetching } = useActor();
-  return useQuery({
+  return useQuery<ExtendedDashboardStats | null>({
     queryKey: ["dashboard"],
     queryFn: async () => {
       const token = getToken();
       if (!actor || !token) return null;
-      return actor.getUserDashboard(token);
+      const result = await actor.getUserDashboard(token);
+      if (!result) return null;
+      const r = result as any;
+      return {
+        ...result,
+        directIncome: r.directIncome ?? 0n,
+        binaryIncome: r.binaryIncome ?? 0n,
+        levelIncome: r.levelIncome ?? 0n,
+      } as ExtendedDashboardStats;
     },
     enabled: !!actor && !isFetching && !!getToken(),
   });
@@ -55,6 +82,21 @@ export function useWalletHistory() {
   });
 }
 
+export function useMyWithdrawals() {
+  const { actor, isFetching } = useActor();
+  return useQuery<WalletTransaction[]>({
+    queryKey: ["my-withdrawals"],
+    queryFn: async () => {
+      const token = getToken();
+      if (!actor || !token) return [];
+      const a = actor as any;
+      if (typeof a.getMyWithdrawals !== "function") return [];
+      return a.getMyWithdrawals(token);
+    },
+    enabled: !!actor && !isFetching && !!getToken(),
+  });
+}
+
 export function usePlans() {
   const { actor, isFetching } = useActor();
   return useQuery({
@@ -91,6 +133,7 @@ export function useWithdrawRequest() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["wallet"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["my-withdrawals"] });
     },
   });
 }
@@ -131,7 +174,8 @@ export function useAdminTotalBusiness() {
     queryKey: ["admin", "business"],
     queryFn: async () => {
       if (!actor) return null;
-      return actor.adminGetTotalBusiness();
+      const token = getAdminToken() || "";
+      return actor.adminGetTotalBusiness(token);
     },
     enabled: !!actor && !isFetching && !!getAdminToken(),
   });
@@ -143,7 +187,8 @@ export function useAdminUserList() {
     queryKey: ["admin", "users"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.adminUserList();
+      const token = getAdminToken() || "";
+      return actor.adminUserList(token);
     },
     enabled: !!actor && !isFetching && !!getAdminToken(),
   });
@@ -155,7 +200,8 @@ export function useAdminPayments() {
     queryKey: ["admin", "payments"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.adminGetPayments();
+      const token = getAdminToken() || "";
+      return actor.adminGetPayments(token);
     },
     enabled: !!actor && !isFetching && !!getAdminToken(),
   });
@@ -167,7 +213,8 @@ export function useAdminProducts() {
     queryKey: ["admin", "products"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.adminGetProducts();
+      const token = getAdminToken() || "";
+      return actor.adminGetProducts(token);
     },
     enabled: !!actor && !isFetching && !!getAdminToken(),
   });
@@ -179,9 +226,91 @@ export function useAdminPendingRegistrations() {
     queryKey: ["admin", "registrations"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.adminGetPendingRegistrations();
+      const token = getAdminToken() || "";
+      return actor.adminGetPendingRegistrations(token);
     },
     enabled: !!actor && !isFetching && !!getAdminToken(),
+  });
+}
+
+export function useAdminWithdrawals() {
+  const { actor, isFetching } = useActor();
+  return useQuery<WalletTransaction[]>({
+    queryKey: ["admin", "withdrawals"],
+    queryFn: async () => {
+      if (!actor) return [];
+      const token = getAdminToken() || "";
+      const a = actor as any;
+      if (typeof a.adminGetWithdrawals !== "function") return [];
+      return a.adminGetWithdrawals(token);
+    },
+    enabled: !!actor && !isFetching && !!getAdminToken(),
+  });
+}
+
+export function useAdminIncomeReports() {
+  const { actor, isFetching } = useActor();
+  return useQuery<IncomeRecord[]>({
+    queryKey: ["admin", "income-reports"],
+    queryFn: async () => {
+      if (!actor) return [];
+      const token = getAdminToken() || "";
+      const a = actor as any;
+      if (typeof a.adminGetIncomeReports !== "function") return [];
+      return a.adminGetIncomeReports(token);
+    },
+    enabled: !!actor && !isFetching && !!getAdminToken(),
+  });
+}
+
+export function useAdminSettings() {
+  const { actor, isFetching } = useActor();
+  return useQuery<AdminSettings | null>({
+    queryKey: ["admin", "settings"],
+    queryFn: async () => {
+      if (!actor) return null;
+      const a = actor as any;
+      if (typeof a.getAdminSettings !== "function") return null;
+      return a.getAdminSettings();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAdminUpdateSettings() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      upiId,
+      accountName,
+      activationAmount,
+      qrCodeUrl,
+      companyName,
+      supportNumber,
+    }: {
+      upiId: string;
+      accountName: string;
+      activationAmount: number;
+      qrCodeUrl: string;
+      companyName: string;
+      supportNumber: string;
+    }) => {
+      if (!actor) throw new Error("No actor");
+      const token = getAdminToken() || "";
+      const a = actor as any;
+      if (typeof a.adminUpdateSettings !== "function") return;
+      return a.adminUpdateSettings(
+        token,
+        upiId,
+        accountName,
+        BigInt(activationAmount),
+        qrCodeUrl,
+        companyName,
+        supportNumber,
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "settings"] }),
   });
 }
 
@@ -194,7 +323,8 @@ export function useAdminActivateUser() {
       isActive,
     }: { userId: string; isActive: boolean }) => {
       if (!actor) throw new Error("No actor");
-      return actor.adminActivateUser(userId, isActive);
+      const token = getAdminToken() || "";
+      return actor.adminActivateUser(token, userId, isActive);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
   });
@@ -209,7 +339,8 @@ export function useAdminVerifyPayment() {
       verified,
     }: { paymentId: bigint; verified: boolean }) => {
       if (!actor) throw new Error("No actor");
-      return actor.adminVerifyPayment(paymentId, verified);
+      const token = getAdminToken() || "";
+      return actor.adminVerifyPayment(token, paymentId, verified);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "payments"] }),
   });
@@ -224,7 +355,8 @@ export function useAdminApproveRegistration() {
       approved,
     }: { userId: string; approved: boolean }) => {
       if (!actor) throw new Error("No actor");
-      return actor.adminApproveRegistration(userId, approved);
+      const token = getAdminToken() || "";
+      return actor.adminApproveRegistration(token, userId, approved);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "registrations"] });
@@ -239,9 +371,11 @@ export function useAdminApproveWithdraw() {
   return useMutation({
     mutationFn: ({ txId, approved }: { txId: bigint; approved: boolean }) => {
       if (!actor) throw new Error("No actor");
-      return actor.adminApproveWithdraw(txId, approved);
+      const token = getAdminToken() || "";
+      return actor.adminApproveWithdraw(token, txId, approved);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["admin", "withdrawals"] }),
   });
 }
 
@@ -261,7 +395,8 @@ export function useAddProduct() {
       imageUrl: string;
     }) => {
       if (!actor) throw new Error("No actor");
-      return actor.addProduct(name, description, price, imageUrl);
+      const token = getAdminToken() || "";
+      return actor.addProduct(token, name, description, price, imageUrl);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "products"] }),
   });
@@ -287,7 +422,9 @@ export function useUpdateProduct() {
       isActive: boolean;
     }) => {
       if (!actor) throw new Error("No actor");
+      const token = getAdminToken() || "";
       return actor.updateProduct(
+        token,
         productId,
         name,
         description,
@@ -324,7 +461,8 @@ export function useAdminUpdateUser() {
       mobile,
     }: { userId: string; fullName: string; mobile: string }) => {
       if (!actor) throw new Error("No actor");
-      return actor.adminUpdateUser(userId, fullName, mobile);
+      const token = getAdminToken() || "";
+      return actor.adminUpdateUser(token, userId, fullName, mobile);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
   });
@@ -336,7 +474,8 @@ export function useAdminDeleteUser() {
   return useMutation({
     mutationFn: ({ userId }: { userId: string }) => {
       if (!actor) throw new Error("No actor");
-      return actor.adminDeleteUser(userId);
+      const token = getAdminToken() || "";
+      return actor.adminDeleteUser(token, userId);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
   });

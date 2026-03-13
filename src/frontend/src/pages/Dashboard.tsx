@@ -161,12 +161,57 @@ export function DashboardPage() {
                 <p className="text-xs text-muted-foreground">{label}</p>
               </div>
               <p
-                className={`font-display text-xl font-bold ${isCount ? "text-foreground" : "text-green-400"}`}
+                className={`font-display text-xl font-bold ${
+                  isCount ? "text-foreground" : "text-green-400"
+                }`}
               >
                 {isCount ? value.toString() : formatCurrency(value)}
               </p>
             </div>
           ),
+        )}
+      </div>
+
+      {/* Income Breakdown */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        {isLoading ? (
+          [1, 2, 3].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)
+        ) : (
+          <>
+            <div
+              data-ocid="dashboard.direct_income.card"
+              className="bg-card border border-green-500/20 rounded-xl p-3 card-glow"
+            >
+              <p className="text-xs text-muted-foreground mb-1 leading-tight">
+                Direct Income
+              </p>
+              <p className="font-display text-base font-bold text-green-400">
+                {formatCurrency(dashboard?.directIncome ?? 0n)}
+              </p>
+            </div>
+            <div
+              data-ocid="dashboard.binary_income.card"
+              className="bg-card border border-blue-500/20 rounded-xl p-3 card-glow"
+            >
+              <p className="text-xs text-muted-foreground mb-1 leading-tight">
+                Binary Pair
+              </p>
+              <p className="font-display text-base font-bold text-blue-400">
+                {formatCurrency(dashboard?.binaryIncome ?? 0n)}
+              </p>
+            </div>
+            <div
+              data-ocid="dashboard.level_income.card"
+              className="bg-card border border-purple-500/20 rounded-xl p-3 card-glow"
+            >
+              <p className="text-xs text-muted-foreground mb-1 leading-tight">
+                Level Income
+              </p>
+              <p className="font-display text-base font-bold text-purple-400">
+                {formatCurrency(dashboard?.levelIncome ?? 0n)}
+              </p>
+            </div>
+          </>
         )}
       </div>
 

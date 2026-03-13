@@ -9,21 +9,47 @@ import {
 } from "../../backend.d";
 import {
   useAdminApproveWithdraw,
-  useAdminUserList,
+  useAdminWithdrawals,
 } from "../../hooks/useQueries";
 import { formatCurrency, formatDate } from "../../utils/format";
 
 export function AdminWithdrawalsPage() {
-  const { data: users = [], isLoading } = useAdminUserList();
+  const { data: transactions = [], isLoading } = useAdminWithdrawals();
   const approveWithdraw = useAdminApproveWithdraw();
 
-  // We show a summary of pending withdrawals per user
+  const withdrawals = transactions.filter(
+    (tx) => tx.txType === Variant_credit_debit.debit,
+  );
+
   const handleAction = async (txId: bigint, approved: boolean) => {
     try {
       await approveWithdraw.mutateAsync({ txId, approved });
       toast.success(`Withdrawal ${approved ? "approved" : "rejected"}`);
     } catch {
       toast.error("Action failed");
+    }
+  };
+
+  const statusBadge = (status: Variant_pending_approved_rejected) => {
+    switch (status) {
+      case Variant_pending_approved_rejected.pending:
+        return (
+          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+            Pending
+          </Badge>
+        );
+      case Variant_pending_approved_rejected.approved:
+        return (
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+            Approved
+          </Badge>
+        );
+      case Variant_pending_approved_rejected.rejected:
+        return (
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+            Rejected
+          </Badge>
+        );
     }
   };
 
@@ -42,7 +68,7 @@ export function AdminWithdrawalsPage() {
             <Skeleton key={i} className="h-20 rounded-xl" />
           ))}
         </div>
-      ) : users.length === 0 ? (
+      ) : withdrawals.length === 0 ? (
         <div
           data-ocid="admin.withdrawals.empty_state"
           className="text-center py-12 text-muted-foreground"
@@ -51,34 +77,37 @@ export function AdminWithdrawalsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="bg-card border border-border rounded-xl p-4 card-glow">
-            <p className="text-sm text-muted-foreground mb-4">
-              User wallet summary. Use Approve/Reject to process withdrawal
-              requests.
-            </p>
-            {users
-              .filter((u) => Number(u.walletBalance) > 0)
-              .map((u, i) => (
-                <div
-                  key={u.id}
-                  data-ocid={`admin.withdrawals.item.${i + 1}`}
-                  className="flex items-center justify-between py-3 border-b border-border last:border-0"
-                >
-                  <div>
-                    <p className="font-semibold text-foreground text-sm">
-                      {u.fullName}
+          {withdrawals.map((tx, i) => (
+            <div
+              key={tx.id.toString()}
+              data-ocid={`admin.withdrawals.item.${i + 1}`}
+              className="bg-card border border-border rounded-xl p-4 card-glow"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      User: {tx.userId}
                     </p>
-                    <p className="text-xs text-muted-foreground">{u.mobile}</p>
-                    <p className="text-sm text-primary font-bold mt-0.5">
-                      {formatCurrency(u.walletBalance)}
-                    </p>
+                    {statusBadge(tx.status)}
                   </div>
-                  <div className="flex gap-2">
+                  <p className="text-xs text-muted-foreground mb-0.5">
+                    {tx.note}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(tx.createdAt)}
+                  </p>
+                  <p className="text-base font-bold text-primary mt-1">
+                    {formatCurrency(tx.amount)}
+                  </p>
+                </div>
+                {tx.status === Variant_pending_approved_rejected.pending && (
+                  <div className="flex flex-col gap-2">
                     <Button
                       data-ocid={`admin.withdrawals.approve_button.${i + 1}`}
                       size="sm"
                       className="gold-gradient text-primary-foreground text-xs h-8 rounded-lg"
-                      onClick={() => handleAction(BigInt(i + 1), true)}
+                      onClick={() => handleAction(tx.id, true)}
                       disabled={approveWithdraw.isPending}
                     >
                       <CheckCircle className="h-3 w-3 mr-1" /> Approve
@@ -88,20 +117,16 @@ export function AdminWithdrawalsPage() {
                       size="sm"
                       variant="outline"
                       className="border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs h-8 rounded-lg"
-                      onClick={() => handleAction(BigInt(i + 1), false)}
+                      onClick={() => handleAction(tx.id, false)}
                       disabled={approveWithdraw.isPending}
                     >
                       <XCircle className="h-3 w-3 mr-1" /> Reject
                     </Button>
                   </div>
-                </div>
-              ))}
-            {users.filter((u) => Number(u.walletBalance) > 0).length === 0 && (
-              <p className="text-center text-muted-foreground text-sm py-4">
-                No pending withdrawal requests
-              </p>
-            )}
-          </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

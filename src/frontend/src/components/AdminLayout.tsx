@@ -1,10 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  Link,
-  Outlet,
-  useNavigate,
-  useRouterState,
-} from "@tanstack/react-router";
+import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   CreditCard,
   LayoutDashboard,
@@ -18,23 +13,23 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { clearAdminToken, getAdminToken } from "../utils/format";
 
 const adminNav = [
   { to: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/admin/users", icon: Users, label: "Users" },
   {
-    to: "/admin/registrations",
+    to: "/admin/payments",
     icon: CreditCard,
     label: "Payments Verification",
   },
   { to: "/admin/products", icon: ShoppingBag, label: "Products Management" },
   { to: "/admin/plans", icon: Package, label: "Plans Management" },
   { to: "/admin/income", icon: TrendingUp, label: "Income Reports" },
-  { to: "/admin/withdrawals", icon: Wallet, label: "Withdraw Requests" },
+  { to: "/admin/withdraw", icon: Wallet, label: "Withdraw Requests" },
   { to: "/admin/settings", icon: Settings, label: "Settings" },
-];
+] as const;
 
 export function AdminLayout() {
   const navigate = useNavigate();
@@ -42,15 +37,28 @@ export function AdminLayout() {
   const pathname = state.location.pathname;
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    if (!getAdminToken()) {
-      navigate({ to: "/admin/login" });
-    }
-  }, [navigate]);
+  if (!getAdminToken()) {
+    navigate({ to: "/admin/login" });
+    return null;
+  }
 
   const handleLogout = () => {
     clearAdminToken();
     navigate({ to: "/admin/login" });
+  };
+
+  const isActive = (to: string) => {
+    if (to === "/admin/payments") {
+      return (
+        pathname === "/admin/payments" || pathname === "/admin/registrations"
+      );
+    }
+    if (to === "/admin/withdraw") {
+      return (
+        pathname === "/admin/withdraw" || pathname === "/admin/withdrawals"
+      );
+    }
+    return pathname === to || pathname.startsWith(`${to}/`);
   };
 
   return (
@@ -66,24 +74,22 @@ export function AdminLayout() {
           <p className="text-xs text-muted-foreground mt-1">Admin Panel</p>
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {adminNav.map(({ to, icon: Icon, label }) => {
-            const isActive = pathname === to || pathname.startsWith(`${to}/`);
-            return (
-              <Link
-                key={to}
-                to={to}
-                data-ocid={`admin.nav.${label.toLowerCase().replace(/\s+/g, "_")}.link`}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-primary/20 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                }`}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {label}
-              </Link>
-            );
-          })}
+          {adminNav.map(({ to, icon: Icon, label }) => (
+            <button
+              key={to}
+              type="button"
+              data-ocid={`admin.nav.${label.toLowerCase().replace(/\s+/g, "_")}.button`}
+              onClick={() => navigate({ to })}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left ${
+                isActive(to)
+                  ? "bg-primary/20 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              }`}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              {label}
+            </button>
+          ))}
         </nav>
         <div className="p-3 border-t border-border">
           <Button
@@ -127,15 +133,18 @@ export function AdminLayout() {
           />
           <nav className="p-4 space-y-2">
             {adminNav.map(({ to, icon: Icon, label }) => (
-              <Link
+              <button
                 key={to}
-                to={to}
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-accent"
+                type="button"
+                onClick={() => {
+                  navigate({ to });
+                  setMenuOpen(false);
+                }}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-accent w-full text-left"
               >
                 <Icon className="h-5 w-5 text-primary shrink-0" />
                 <span className="font-medium">{label}</span>
-              </Link>
+              </button>
             ))}
             <button
               type="button"
