@@ -162,12 +162,12 @@ export function AdminSettingsPage() {
             <div className="flex flex-col items-center mb-4">
               <div className="bg-white p-2 rounded-xl border-2 border-yellow-400/40 mb-2">
                 <img
-                  src="/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1-1.png"
+                  src="/assets/uploads/file_0000000094f0720b8ff4d7624cf158b4-1.png"
                   alt="Default QR Code"
                   className="w-40 h-40 object-contain"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
-                      "/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1.png";
+                      "/assets/uploads/file_0000000094f0720b8ff4d7624cf158b4-1.png";
                   }}
                 />
               </div>

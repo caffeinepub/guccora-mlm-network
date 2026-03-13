@@ -595,12 +595,12 @@ export function RegisterPage() {
                     />
                   ) : (
                     <img
-                      src="/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1-1.png"
+                      src="/assets/uploads/file_0000000094f0720b8ff4d7624cf158b4-1.png"
                       alt="UPI QR Code - Scan to pay"
                       className="w-56 h-56 object-contain"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
-                          "/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1.png";
+                          "/assets/uploads/file_0000000094f0720b8ff4d7624cf158b4-1.png";
                       }}
                     />
                   )}
