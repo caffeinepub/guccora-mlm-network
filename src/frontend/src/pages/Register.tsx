@@ -23,15 +23,9 @@ import type { Plan } from "../backend.d";
 import { createActorWithConfig } from "../config";
 import { usePlans } from "../hooks/useQueries";
 import { formatCurrency } from "../utils/format";
+import { getPaymentSettings } from "./admin/AdminSettings";
 
 const STEP_LABELS = ["Details", "Verify OTP", "Plan", "Payment"];
-
-const PAYMENT_INSTRUCTIONS = [
-  "Scan the QR code using PhonePe, Google Pay, Paytm or BHIM",
-  "Pay the activation amount \u20b9599",
-  "After payment, enter the Transaction ID below",
-  "Upload your payment screenshot",
-];
 
 const TEST_OTP = "1234";
 
@@ -57,6 +51,20 @@ export function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [upiCopied, setUpiCopied] = useState(false);
   const [registered, setRegistered] = useState(false);
+
+  // Payment settings from admin
+  const paymentSettings = getPaymentSettings();
+  const activeUpiId = paymentSettings.upiId || "guccora@upi";
+  const activeUpiName = paymentSettings.upiName || "PUTTAPALLI RAVITEJA";
+  const activeAmount = paymentSettings.activationAmount || "599";
+  const activeQrCode = paymentSettings.qrCodeDataUrl;
+
+  const paymentInstructions = [
+    "Scan the QR code using PhonePe, Google Pay, Paytm or BHIM",
+    `Pay the activation amount \u20b9${activeAmount}`,
+    "After payment, enter the Transaction ID below",
+    "Upload your payment screenshot",
+  ];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -147,7 +155,7 @@ export function RegisterPage() {
   };
 
   const handleCopyUpiId = () => {
-    navigator.clipboard.writeText("guccora@upi").then(() => {
+    navigator.clipboard.writeText(activeUpiId).then(() => {
       setUpiCopied(true);
       toast.success("UPI ID copied!");
       setTimeout(() => setUpiCopied(false), 2000);
@@ -570,24 +578,32 @@ export function RegisterPage() {
                 {selectedPlan && (
                   <div className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full gold-gradient">
                     <span className="text-sm font-bold text-primary-foreground">
-                      Pay {formatCurrency(selectedPlan.price)} via UPI
+                      Pay ₹{activeAmount} via UPI
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* QR Code */}
+              {/* QR Code - dynamic from admin settings */}
               <div className="flex flex-col items-center gap-2">
                 <div className="bg-white p-3 rounded-2xl shadow-lg border-2 border-yellow-400/40">
-                  <img
-                    src="/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1-1.png"
-                    alt="UPI QR Code - Scan to pay"
-                    className="w-56 h-56 object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1.png";
-                    }}
-                  />
+                  {activeQrCode ? (
+                    <img
+                      src={activeQrCode}
+                      alt="UPI QR Code - Scan to pay"
+                      className="w-56 h-56 object-contain"
+                    />
+                  ) : (
+                    <img
+                      src="/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1-1.png"
+                      alt="UPI QR Code - Scan to pay"
+                      className="w-56 h-56 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1.png";
+                      }}
+                    />
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Scan QR code with any UPI app
@@ -599,7 +615,7 @@ export function RegisterPage() {
                 <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wide mb-1">
                   How to Pay
                 </p>
-                {PAYMENT_INSTRUCTIONS.map((instruction, idx) => (
+                {paymentInstructions.map((instruction, idx) => (
                   <div key={instruction} className="flex items-start gap-2.5">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-yellow-500/30 text-yellow-300 text-[10px] font-bold flex items-center justify-center mt-0.5">
                       {idx + 1}
@@ -611,7 +627,7 @@ export function RegisterPage() {
                 ))}
               </div>
 
-              {/* UPI ID & Name */}
+              {/* UPI ID & Name - dynamic */}
               <div className="bg-accent/30 border border-border rounded-xl px-4 py-3 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">UPI ID</span>
@@ -621,7 +637,7 @@ export function RegisterPage() {
                     className="flex items-center gap-1.5 group"
                   >
                     <span className="font-bold text-sm text-primary tracking-wide">
-                      guccora@upi
+                      {activeUpiId}
                     </span>
                     <span className="text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
                       {upiCopied ? "Copied!" : "Tap to copy"}
@@ -631,7 +647,13 @@ export function RegisterPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">Name</span>
                   <span className="font-semibold text-sm text-foreground">
-                    PUTTAPALLI RAVITEJA
+                    {activeUpiName}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Amount</span>
+                  <span className="font-bold text-sm text-primary">
+                    ₹{activeAmount}
                   </span>
                 </div>
               </div>
