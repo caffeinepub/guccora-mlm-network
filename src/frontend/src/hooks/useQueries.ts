@@ -313,3 +313,31 @@ export function useAddBinaryPosition() {
     },
   });
 }
+
+export function useAdminUpdateUser() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      fullName,
+      mobile,
+    }: { userId: string; fullName: string; mobile: string }) => {
+      if (!actor) throw new Error("No actor");
+      return actor.adminUpdateUser(userId, fullName, mobile);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
+  });
+}
+
+export function useAdminDeleteUser() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId }: { userId: string }) => {
+      if (!actor) throw new Error("No actor");
+      return actor.adminDeleteUser(userId);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
+  });
+}

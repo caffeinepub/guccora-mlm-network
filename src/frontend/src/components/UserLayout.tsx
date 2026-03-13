@@ -8,7 +8,7 @@ export function UserLayout() {
 
   useEffect(() => {
     if (!getToken()) {
-      navigate({ to: "/" });
+      navigate({ to: "/login" });
     }
   }, [navigate]);
 

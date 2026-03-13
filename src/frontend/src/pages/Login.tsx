@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Clock, Loader2, Phone } from "lucide-react";
+import { Clock, Eye, EyeOff, Loader2, Lock, Phone } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createActorWithConfig } from "../config";
@@ -11,6 +11,8 @@ import { setToken } from "../utils/format";
 export function LoginPage() {
   const navigate = useNavigate();
   const [mobile, setMobile] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
 
@@ -19,11 +21,15 @@ export function LoginPage() {
       toast.error("Enter a valid 10-digit mobile number");
       return;
     }
+    if (!password.trim()) {
+      toast.error("Enter your password");
+      return;
+    }
     setLoading(true);
     setPendingApproval(false);
     try {
       const actor = await createActorWithConfig();
-      const token = await actor.loginUserByMobile(mobile, "");
+      const token = await actor.loginUserByMobile(mobile, password);
       if (!token) {
         toast.error("Account not found. Please register first.");
         return;
@@ -40,6 +46,8 @@ export function LoginPage() {
         setPendingApproval(true);
       } else if (msg.includes("rejected")) {
         toast.error("Your registration was rejected. Please contact support.");
+      } else if (msg.includes("Invalid password")) {
+        toast.error("Incorrect password. Please try again.");
       } else {
         toast.error("Login failed. Mobile number not registered.");
       }
@@ -107,8 +115,36 @@ export function LoginPage() {
                   }
                   className="pl-9 bg-input border-border text-foreground placeholder:text-muted-foreground"
                   maxLength={10}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm text-foreground/80 mb-1.5 block">
+                Password
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  data-ocid="login.password_input"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-9 pr-10 bg-input border-border text-foreground placeholder:text-muted-foreground"
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             </div>
 

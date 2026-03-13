@@ -41,7 +41,7 @@ export function ProfilePage() {
   const handleLogout = () => {
     clearToken();
     toast.success("Logged out");
-    navigate({ to: "/" });
+    navigate({ to: "/login" });
   };
 
   const copyReferral = () => {

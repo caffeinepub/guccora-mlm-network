@@ -11,6 +11,7 @@ import { AdminLayout } from "./components/AdminLayout";
 import { UserLayout } from "./components/UserLayout";
 import { BinaryTreePage } from "./pages/BinaryTree";
 import { DashboardPage } from "./pages/Dashboard";
+import { HomePage } from "./pages/HomePage";
 import { IncomePage } from "./pages/Income";
 import { LoginPage } from "./pages/Login";
 import { PlansPage } from "./pages/Plans";
@@ -39,10 +40,17 @@ const rootRoute = createRootRoute({
   ),
 });
 
+// Homepage route
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  component: HomePage,
+});
+
 // Auth routes
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/",
+  path: "/login",
   component: LoginPage,
 });
 
@@ -169,6 +177,7 @@ const adminSettingsRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
+  homeRoute,
   loginRoute,
   registerRoute,
   adminLoginRoute,

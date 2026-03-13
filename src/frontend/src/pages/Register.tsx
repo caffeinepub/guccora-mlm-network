@@ -7,29 +7,41 @@ import {
   ChevronLeft,
   Clock,
   CreditCard,
+  Eye,
+  EyeOff,
   Hash,
   ImageIcon,
+  KeyRound,
   Loader2,
+  MessageSquare,
   Phone,
   User,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Plan } from "../backend.d";
 import { createActorWithConfig } from "../config";
 import { usePlans } from "../hooks/useQueries";
 import { formatCurrency } from "../utils/format";
 
-const STEP_LABELS = ["Details", "Plan", "Payment"];
+const STEP_LABELS = ["Details", "Verify OTP", "Plan", "Payment"];
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  // Read ref from URL search params
+  const refCode = new URLSearchParams(window.location.search).get("ref") ?? "";
+
   const { data: plans = [] } = usePlans();
 
   const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState("");
   const [mobile, setMobile] = useState("");
-  const [sponsorCode, setSponsorCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [sponsorCode, setSponsorCode] = useState(refCode);
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [upiRef, setUpiRef] = useState("");
   const [screenshotUrl, setScreenshotUrl] = useState("");
@@ -37,25 +49,82 @@ export function RegisterPage() {
   const [upiCopied, setUpiCopied] = useState(false);
   const [registered, setRegistered] = useState(false);
 
-  const handleStep1 = () => {
-    if (
-      !fullName.trim() ||
-      !mobile ||
-      mobile.length < 10 ||
-      !sponsorCode.trim()
-    ) {
-      toast.error("Fill all fields with valid data");
+  useEffect(() => {
+    if (refCode) setSponsorCode(refCode);
+  }, [refCode]);
+
+  const handleStep1 = async () => {
+    if (!fullName.trim() || fullName.trim().length < 3) {
+      toast.error("Enter your full name (min 3 characters)");
       return;
     }
-    setStep(2);
+    if (!mobile || mobile.length < 10) {
+      toast.error("Enter a valid 10-digit mobile number");
+      return;
+    }
+    if (!password || password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    // Send OTP
+    setOtpLoading(true);
+    try {
+      const actor = await createActorWithConfig();
+      await actor.sendOTP(mobile);
+      setStep(2);
+      toast.success("OTP sent to your mobile number");
+    } catch {
+      toast.error("Failed to send OTP. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
-  const handleStep2 = () => {
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length < 4) {
+      toast.error("Enter the 4-digit OTP");
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      const actor = await createActorWithConfig();
+      const result = await actor.verifyOTP(mobile, otp);
+      if (result) {
+        setStep(3);
+        toast.success("Mobile number verified!");
+      } else {
+        toast.error("Invalid OTP. Please try again.");
+      }
+    } catch {
+      toast.error("OTP verification failed. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setOtpLoading(true);
+    try {
+      const actor = await createActorWithConfig();
+      await actor.sendOTP(mobile);
+      toast.success("OTP resent to your mobile number");
+    } catch {
+      toast.error("Failed to resend OTP.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleStep3 = () => {
     if (!selectedPlan) {
       toast.error("Select a plan");
       return;
     }
-    setStep(3);
+    setStep(4);
   };
 
   const handleRegister = async () => {
@@ -74,6 +143,7 @@ export function RegisterPage() {
         selectedPlan.id,
         upiRef,
         screenshotUrl,
+        password,
       );
       setRegistered(true);
     } catch (e: unknown) {
@@ -120,7 +190,7 @@ export function RegisterPage() {
   ];
   const displayPlans = plans.length > 0 ? plans : staticPlans;
 
-  // Registration success - pending verification screen
+  // Registration success
   if (registered) {
     return (
       <div className="min-h-screen bg-mesh flex flex-col items-center justify-center px-5 py-8">
@@ -174,7 +244,7 @@ export function RegisterPage() {
             <Button
               data-ocid="register.pending.login_button"
               className="w-full gold-gradient text-primary-foreground font-semibold h-11 rounded-xl"
-              onClick={() => navigate({ to: "/" })}
+              onClick={() => navigate({ to: "/login" })}
             >
               Go to Login
             </Button>
@@ -199,7 +269,7 @@ export function RegisterPage() {
             </button>
           ) : (
             <Link
-              to="/"
+              to="/login"
               className="text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -213,9 +283,9 @@ export function RegisterPage() {
         </div>
 
         {/* Progress */}
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-1 mb-6">
           {STEP_LABELS.map((label, i) => (
-            <div key={label} className="flex items-center gap-2 flex-1">
+            <div key={label} className="flex items-center gap-1 flex-1">
               <div className="flex flex-col items-center gap-1">
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -228,11 +298,11 @@ export function RegisterPage() {
                 >
                   {step > i + 1 ? <CheckCircle className="h-4 w-4" /> : i + 1}
                 </div>
-                <span className="text-[9px] text-muted-foreground">
+                <span className="text-[9px] text-muted-foreground text-center leading-tight">
                   {label}
                 </span>
               </div>
-              {i < 2 && (
+              {i < 3 && (
                 <div
                   className={`flex-1 h-px mt-[-14px] ${
                     step > i + 1 ? "bg-primary" : "bg-border"
@@ -244,7 +314,7 @@ export function RegisterPage() {
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-5 card-glow shadow-card">
-          {/* Step 1 */}
+          {/* Step 1 - Personal Details + Password */}
           {step === 1 && (
             <div className="space-y-4">
               <div>
@@ -291,7 +361,53 @@ export function RegisterPage() {
               </div>
               <div>
                 <Label className="text-sm text-foreground/80 mb-1.5 block">
-                  Sponsor Referral Code
+                  Create Password
+                </Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    data-ocid="register.password_input"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Min 6 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9 pr-10 bg-input border-border text-foreground placeholder:text-muted-foreground"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm text-foreground/80 mb-1.5 block">
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    data-ocid="register.confirm_password_input"
+                    type="password"
+                    placeholder="Re-enter password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-9 bg-input border-border text-foreground placeholder:text-muted-foreground"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm text-foreground/80 mb-1.5 block">
+                  Sponsor Referral Code{" "}
+                  <span className="text-muted-foreground text-xs">
+                    (optional)
+                  </span>
                 </Label>
                 <div className="relative">
                   <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -308,14 +424,76 @@ export function RegisterPage() {
                 data-ocid="register.next_button"
                 className="w-full gold-gradient text-primary-foreground font-semibold h-11 rounded-xl"
                 onClick={handleStep1}
+                disabled={otpLoading}
               >
-                Continue
+                {otpLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                {otpLoading ? "Sending OTP..." : "Send OTP & Continue"}
               </Button>
             </div>
           )}
 
-          {/* Step 2 */}
+          {/* Step 2 - OTP Verification */}
           {step === 2 && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
+                  <MessageSquare className="h-7 w-7 text-primary" />
+                </div>
+                <h2 className="font-display text-lg font-bold text-foreground">
+                  Verify Mobile
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Enter the OTP sent to{" "}
+                  <span className="text-foreground font-semibold">
+                    {mobile}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <Label className="text-sm text-foreground/80 mb-1.5 block text-center">
+                  Enter 4-digit OTP
+                </Label>
+                <Input
+                  data-ocid="register.otp_input"
+                  type="tel"
+                  placeholder="_ _ _ _"
+                  value={otp}
+                  onChange={(e) =>
+                    setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))
+                  }
+                  className="bg-input border-border text-foreground placeholder:text-muted-foreground text-center text-2xl tracking-widest font-bold h-14"
+                  maxLength={4}
+                />
+              </div>
+              <Button
+                data-ocid="register.otp_verify_button"
+                className="w-full gold-gradient text-primary-foreground font-semibold h-11 rounded-xl"
+                onClick={handleVerifyOtp}
+                disabled={otpLoading}
+              >
+                {otpLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                {otpLoading ? "Verifying..." : "Verify OTP"}
+              </Button>
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={otpLoading}
+                  className="text-xs text-primary hover:underline"
+                  data-ocid="register.otp_resend_button"
+                >
+                  Resend OTP
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 - Choose Plan */}
+          {step === 3 && (
             <div className="space-y-4">
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground">
@@ -356,17 +534,16 @@ export function RegisterPage() {
               <Button
                 data-ocid="register.plan_next_button"
                 className="w-full gold-gradient text-primary-foreground font-semibold h-11 rounded-xl"
-                onClick={handleStep2}
+                onClick={handleStep3}
               >
                 Continue
               </Button>
             </div>
           )}
 
-          {/* Step 3 - Payment + Register */}
-          {step === 3 && (
+          {/* Step 4 - Payment */}
+          {step === 4 && (
             <div className="space-y-4">
-              {/* Heading with amount */}
               <div className="text-center">
                 <h2 className="font-display text-lg font-bold text-foreground">
                   UPI Payment
@@ -384,9 +561,13 @@ export function RegisterPage() {
               <div className="flex flex-col items-center gap-2">
                 <div className="bg-white p-3 rounded-2xl shadow-lg border-2 border-yellow-400/40">
                   <img
-                    src="/assets/generated/upi-qr-code.dim_400x450.png"
+                    src="/assets/uploads/AccountQRCodeCentral-Bank-Of-India-5251_LIGHT_THEME-1.png"
                     alt="UPI QR Code - Scan to pay"
                     className="w-56 h-56 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "/assets/generated/upi-qr-code.dim_400x450.png";
+                    }}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -463,7 +644,7 @@ export function RegisterPage() {
                 </p>
               </div>
 
-              {/* Screenshot URL (optional) */}
+              {/* Screenshot URL */}
               <div>
                 <Label className="text-sm text-foreground/80 mb-1 block">
                   Payment Screenshot URL{" "}
@@ -506,7 +687,7 @@ export function RegisterPage() {
         <p className="text-center text-sm text-muted-foreground mt-4">
           Already have an account?{" "}
           <Link
-            to="/"
+            to="/login"
             className="text-primary hover:underline"
             data-ocid="register.login.link"
           >

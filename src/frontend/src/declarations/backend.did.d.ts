@@ -183,7 +183,7 @@ export interface _SERVICE {
   >,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'loginUserByMobile' : ActorMethod<[string, string], SessionToken>,
-  'registerUser' : ActorMethod<[string, string, string, bigint, string, string], string>,
+  'registerUser' : ActorMethod<[string, string, string, bigint, string, string, string], string>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'sendOTP' : ActorMethod<[string], string>,
   'submitPayment' : ActorMethod<[SessionToken, bigint, string], bigint>,

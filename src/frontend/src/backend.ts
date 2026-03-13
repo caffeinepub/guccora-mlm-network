@@ -243,6 +243,8 @@ export interface backendInterface {
     adminActivateUser(userId: UserId, isActive: boolean): Promise<void>;
     adminApproveRegistration(userId: UserId, approved: boolean): Promise<void>;
     adminApproveWithdraw(txId: bigint, approved: boolean): Promise<void>;
+    adminDeleteUser(userId: string): Promise<void>;
+    adminUpdateUser(userId: string, fullName: string, mobile: string): Promise<void>;
     adminGetPayments(): Promise<Array<Payment>>;
     adminGetPendingRegistrations(): Promise<Array<UserRegistrationDto>>;
     adminGetProducts(): Promise<Array<Product>>;
@@ -273,7 +275,7 @@ export interface backendInterface {
     getUserWalletHistory(sessionToken: SessionToken): Promise<Array<WalletTransaction>>;
     isCallerAdmin(): Promise<boolean>;
     loginUserByMobile(mobile: string, otp: string): Promise<SessionToken>;
-    registerUser(fullName: string, mobile: string, sponsorCode: string, planId: bigint, utrNumber: string, screenshotUrl: string): Promise<string>;
+    registerUser(fullName: string, mobile: string, sponsorCode: string, planId: bigint, utrNumber: string, screenshotUrl: string, password: string): Promise<string>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     sendOTP(mobile: string): Promise<string>;
     submitPayment(sessionToken: SessionToken, planId: bigint, upiRef: string): Promise<bigint>;
@@ -368,6 +370,12 @@ export class Backend implements backendInterface {
             const result = await this.actor.adminApproveWithdraw(arg0, arg1);
             return result;
         }
+    }
+    async adminDeleteUser(arg0: string): Promise<void> {
+        try { await (this.actor as any).adminDeleteUser(arg0); } catch (e) { if (this.processError) this.processError(e); }
+    }
+    async adminUpdateUser(arg0: string, arg1: string, arg2: string): Promise<void> {
+        try { await (this.actor as any).adminUpdateUser(arg0, arg1, arg2); } catch (e) { if (this.processError) this.processError(e); }
     }
     async adminGetPayments(): Promise<Array<Payment>> {
         if (this.processError) {
@@ -672,17 +680,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async registerUser(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string, arg5: string): Promise<string> {
+    async registerUser(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string, arg5: string, arg6: string): Promise<string> {
         if (this.processError) {
             try {
-                const result = await this.actor.registerUser(arg0, arg1, arg2, arg3, arg4, arg5);
+                const result = await this.actor.registerUser(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.registerUser(arg0, arg1, arg2, arg3, arg4, arg5);
+            const result = await this.actor.registerUser(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
             return result;
         }
     }

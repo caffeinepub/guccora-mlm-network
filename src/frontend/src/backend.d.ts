@@ -160,6 +160,7 @@ export interface backendInterface {
     adminActivateUser(userId: UserId, isActive: boolean): Promise<void>;
     adminApproveRegistration(userId: UserId, approved: boolean): Promise<void>;
     adminApproveWithdraw(txId: bigint, approved: boolean): Promise<void>;
+    adminDeleteUser(userId: string): Promise<void>;
     adminGetPayments(): Promise<Array<Payment>>;
     adminGetPendingRegistrations(): Promise<Array<UserRegistrationDto>>;
     adminGetProducts(): Promise<Array<Product>>;
@@ -170,6 +171,7 @@ export interface backendInterface {
         totalWithdrawals: bigint;
     }>;
     adminLogin(password: string): Promise<SessionToken>;
+    adminUpdateUser(userId: string, fullName: string, mobile: string): Promise<void>;
     adminUserList(): Promise<Array<UserDto>>;
     adminVerifyPayment(paymentId: bigint, verified: boolean): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
@@ -190,7 +192,7 @@ export interface backendInterface {
     getUserWalletHistory(sessionToken: SessionToken): Promise<Array<WalletTransaction>>;
     isCallerAdmin(): Promise<boolean>;
     loginUserByMobile(mobile: string, otp: string): Promise<SessionToken>;
-    registerUser(fullName: string, mobile: string, sponsorCode: string, planId: bigint, utrNumber: string, screenshotUrl: string): Promise<string>;
+    registerUser(fullName: string, mobile: string, sponsorCode: string, planId: bigint, utrNumber: string, screenshotUrl: string, password: string): Promise<string>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     sendOTP(mobile: string): Promise<string>;
     submitPayment(sessionToken: SessionToken, planId: bigint, upiRef: string): Promise<bigint>;

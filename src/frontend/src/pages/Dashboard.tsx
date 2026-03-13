@@ -22,7 +22,7 @@ export function DashboardPage() {
   const { data: profile } = useUserProfile();
 
   useEffect(() => {
-    if (!getToken()) navigate({ to: "/" });
+    if (!getToken()) navigate({ to: "/login" });
   }, [navigate]);
 
   const referralLink = profile?.myReferralCode

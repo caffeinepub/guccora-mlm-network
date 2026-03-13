@@ -44,6 +44,32 @@ actor {
     rightTeamCount : Nat;
   };
 
+  // V2 User type - kept for migration from stable storage
+  type UserV2 = {
+    id : UserId;
+    fullName : Text;
+    mobile : Text;
+    sponsorCode : Text;
+    myReferralCode : Text;
+    planId : Nat;
+    isActive : Bool;
+    walletBalance : Nat;
+    totalIncome : Nat;
+    directIncome : Nat;
+    binaryIncome : Nat;
+    levelIncome : Nat;
+    leftChildId : ?UserId;
+    rightChildId : ?UserId;
+    parentId : ?UserId;
+    position : ?Position;
+    joinedAt : Int;
+    leftTeamCount : Nat;
+    rightTeamCount : Nat;
+    utrNumber : Text;
+    screenshotUrl : Text;
+    paymentStatus : PaymentStatus;
+  };
+
   // Current User type with payment verification fields
   type User = {
     id : UserId;
@@ -68,6 +94,7 @@ actor {
     utrNumber : Text;
     screenshotUrl : Text;
     paymentStatus : PaymentStatus;
+    password : Text;
   };
 
   type Plan = {
@@ -180,7 +207,10 @@ actor {
   var usersMap = Map.empty<UserId, UserV1>();
 
   // New stable map with updated User type
-  var usersMapV2 = Map.empty<UserId, User>();
+  var usersMapV2 = Map.empty<UserId, UserV2>();
+
+  // New stable map with password field
+  var usersMapV3 = Map.empty<UserId, User>();
 
   // Migration flag
   var usersMigrationDone = false;
@@ -196,7 +226,7 @@ actor {
   var userProfiles = Map.empty<Principal, UserProfile>();
 
   // Admin credentials
-  let ADMIN_PASSWORD = "Admin@123";
+  let ADMIN_PASSWORD = "Guccora@123";
   var adminSessionsMap = Map.empty<SessionToken, Bool>();
 
   // Counters
@@ -239,7 +269,7 @@ actor {
   func migrateUsersV1ToV2() {
     if (not usersMigrationDone) {
       for ((k, v) in usersMap.entries()) {
-        let newUser : User = {
+        let newUser : UserV2 = {
           id = v.id;
           fullName = v.fullName;
           mobile = v.mobile;
@@ -261,7 +291,6 @@ actor {
           rightTeamCount = v.rightTeamCount;
           utrNumber = "";
           screenshotUrl = "";
-          // Existing users were active before this upgrade, so mark as approved
           paymentStatus = if (v.isActive) { #approved } else { #pendingVerification };
         };
         usersMapV2.add(k, newUser);
@@ -273,8 +302,43 @@ actor {
   };
 
   system func preupgrade() {};
+  func migrateUsersV2ToV3() {
+    if (usersMapV3.size() == 0 and usersMapV2.size() > 0) {
+      for ((k, v) in usersMapV2.entries()) {
+        let newUser : User = {
+          id = v.id;
+          fullName = v.fullName;
+          mobile = v.mobile;
+          sponsorCode = v.sponsorCode;
+          myReferralCode = v.myReferralCode;
+          planId = v.planId;
+          isActive = v.isActive;
+          walletBalance = v.walletBalance;
+          totalIncome = v.totalIncome;
+          directIncome = v.directIncome;
+          binaryIncome = v.binaryIncome;
+          levelIncome = v.levelIncome;
+          leftChildId = v.leftChildId;
+          rightChildId = v.rightChildId;
+          parentId = v.parentId;
+          position = v.position;
+          joinedAt = v.joinedAt;
+          leftTeamCount = v.leftTeamCount;
+          rightTeamCount = v.rightTeamCount;
+          utrNumber = v.utrNumber;
+          screenshotUrl = v.screenshotUrl;
+          paymentStatus = v.paymentStatus;
+          password = "";
+        };
+        usersMapV3.add(k, newUser);
+      };
+      usersMapV2 := Map.empty<UserId, UserV2>();
+    };
+  };
+
   system func postupgrade() {
     migrateUsersV1ToV2();
+    migrateUsersV2ToV3();
     initializePlans();
   };
 
@@ -352,7 +416,7 @@ actor {
     let maxIterations = 1000;
     
     while (iterations < maxIterations) {
-      switch (usersMapV2.get(currentUserId)) {
+      switch (usersMapV3.get(currentUserId)) {
         case (null) {
           Runtime.trap("Sponsor not found");
         };
@@ -378,14 +442,14 @@ actor {
   };
 
   func getTeamCount(userId : UserId) : Nat {
-    switch (usersMapV2.get(userId)) {
+    switch (usersMapV3.get(userId)) {
       case (null) { 0 };
       case (?user) { 1 + user.leftTeamCount + user.rightTeamCount };
     };
   };
 
   func distributeDirectIncome(sponsorId : UserId, amount : Nat) {
-    switch (usersMapV2.get(sponsorId)) {
+    switch (usersMapV3.get(sponsorId)) {
       case (null) {};
       case (?sponsor) {
         let updatedSponsor = {
@@ -394,7 +458,7 @@ actor {
           directIncome = sponsor.directIncome + amount;
           totalIncome = sponsor.totalIncome + amount;
         };
-        usersMapV2.add(sponsorId, updatedSponsor);
+        usersMapV3.add(sponsorId, updatedSponsor);
         
         let incomeRec : IncomeRecord = {
           id = createIncomeRecordId();
@@ -410,18 +474,19 @@ actor {
     };
   };
 
+  // Fix: use 0-based index to avoid Nat subtraction warning
   func distributeLevelIncome(newUserId : UserId, planPrice : Nat, levelRates : [Nat]) {
     var currentId = ?newUserId;
-    var level = 1;
+    var levelIdx = 0; // 0-based index into levelRates
     
-    while (level <= 10 and currentId.isSome()) {
+    while (levelIdx < 10 and currentId.isSome()) {
       switch (currentId) {
         case (?userId) {
-          switch (usersMapV2.get(userId)) {
+          switch (usersMapV3.get(userId)) {
             case (null) { currentId := null };
             case (?user) {
-              if (level - 1 < levelRates.size()) {
-                let rate = levelRates[level - 1];
+              if (levelIdx < levelRates.size()) {
+                let rate = levelRates[levelIdx];
                 let amount = (planPrice * rate) / 100;
                 
                 let updatedUser = {
@@ -430,7 +495,7 @@ actor {
                   levelIncome = user.levelIncome + amount;
                   totalIncome = user.totalIncome + amount;
                 };
-                usersMapV2.add(userId, updatedUser);
+                usersMapV3.add(userId, updatedUser);
                 
                 let incomeRec : IncomeRecord = {
                   id = createIncomeRecordId();
@@ -438,7 +503,7 @@ actor {
                   incomeType = #level;
                   amount = amount;
                   fromUserId = newUserId;
-                  level = ?level;
+                  level = ?(levelIdx + 1); // 1-based level for display
                   createdAt = Time.now();
                 };
                 incomesMap.add(incomeRec.id, incomeRec);
@@ -449,18 +514,18 @@ actor {
         };
         case (null) {};
       };
-      level += 1;
+      levelIdx += 1;
     };
   };
 
   func updateParentTeamCounts(userId : UserId, position : Position) {
-    switch (usersMapV2.get(userId)) {
+    switch (usersMapV3.get(userId)) {
       case (null) {};
       case (?user) {
         switch (user.parentId) {
           case (null) {};
           case (?parentId) {
-            switch (usersMapV2.get(parentId)) {
+            switch (usersMapV3.get(parentId)) {
               case (null) {};
               case (?parent) {
                 let updatedParent = switch (position) {
@@ -471,7 +536,7 @@ actor {
                     { parent with rightTeamCount = parent.rightTeamCount + 1 }
                   };
                 };
-                usersMapV2.add(parentId, updatedParent);
+                usersMapV3.add(parentId, updatedParent);
                 
                 switch (parent.position) {
                   case (?pos) { updateParentTeamCounts(parentId, pos) };
@@ -514,7 +579,8 @@ actor {
     sponsorCode : Text,
     planId : Nat,
     utrNumber : Text,
-    screenshotUrl : Text
+    screenshotUrl : Text,
+    password : Text
   ) : async Text {
     initializePlans();
     
@@ -527,7 +593,7 @@ actor {
     };
 
     // Check if mobile already registered
-    for ((_, u) in usersMapV2.entries()) {
+    for ((_, u) in usersMapV3.entries()) {
       if (u.mobile == mobile) {
         Runtime.trap("Mobile number already registered");
       };
@@ -563,17 +629,18 @@ actor {
           utrNumber = utrNumber;
           screenshotUrl = screenshotUrl;
           paymentStatus = #pendingVerification;
+          password = password;
         };
 
-        usersMapV2.add(userId, user);
+        usersMapV3.add(userId, user);
 
-        switch (usersMapV2.get(parentId)) {
+        switch (usersMapV3.get(parentId)) {
           case (?parent) {
             let updatedParent = switch (position) {
               case (#left) { { parent with leftChildId = ?userId } };
               case (#right) { { parent with rightChildId = ?userId } };
             };
-            usersMapV2.add(parentId, updatedParent);
+            usersMapV3.add(parentId, updatedParent);
           };
           case (null) {};
         };
@@ -597,9 +664,12 @@ actor {
   };
 
   // 4. Login User By Mobile
-  public shared ({ caller }) func loginUserByMobile(mobile : Text, _otp : Text) : async SessionToken {
-    for ((userId, user) in usersMapV2.entries()) {
+  public shared ({ caller }) func loginUserByMobile(mobile : Text, password : Text) : async SessionToken {
+    for ((userId, user) in usersMapV3.entries()) {
       if (user.mobile == mobile) {
+        if (password != "" and user.password != "" and user.password != password) {
+          Runtime.trap("Invalid password. Please check your password and try again.");
+        };
         if (not user.isActive) {
           switch (user.paymentStatus) {
             case (#pendingVerification) {
@@ -627,20 +697,20 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (usersMapV2.get(userId), usersMapV2.get(parentId)) {
+    switch (usersMapV3.get(userId), usersMapV3.get(parentId)) {
       case (?user, ?parent) {
         let updatedUser = {
           user with
           parentId = ?parentId;
           position = ?position;
         };
-        usersMapV2.add(userId, updatedUser);
+        usersMapV3.add(userId, updatedUser);
 
         let updatedParent = switch (position) {
           case (#left) { { parent with leftChildId = ?userId } };
           case (#right) { { parent with rightChildId = ?userId } };
         };
-        usersMapV2.add(parentId, updatedParent);
+        usersMapV3.add(parentId, updatedParent);
       };
       case (_, _) { Runtime.trap("User or parent not found") };
     };
@@ -652,7 +722,7 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (usersMapV2.get(userId)) {
+    switch (usersMapV3.get(userId)) {
       case (null) { Runtime.trap("User not found") };
       case (?user) {
         let leftBusiness = switch (user.leftChildId) {
@@ -675,7 +745,7 @@ actor {
               binaryIncome = user.binaryIncome + binaryIncome;
               totalIncome = user.totalIncome + binaryIncome;
             };
-            usersMapV2.add(userId, updatedUser);
+            usersMapV3.add(userId, updatedUser);
             
             let incomeRec : IncomeRecord = {
               id = createIncomeRecordId();
@@ -714,12 +784,12 @@ actor {
           };
         };
 
-        switch (usersMapV2.get(userId)) {
+        switch (usersMapV3.get(userId)) {
           case (null) { null };
           case (?user) {
             let totalTeam = user.leftTeamCount + user.rightTeamCount;
             var directReferrals = 0;
-            for ((_, u) in usersMapV2.entries()) {
+            for ((_, u) in usersMapV3.entries()) {
               if (u.sponsorCode == user.myReferralCode) {
                 directReferrals += 1;
               };
@@ -767,7 +837,7 @@ actor {
           case (null) { Runtime.trap("Unauthorized: Session not linked to caller") };
         };
 
-        switch (usersMapV2.get(userId)) {
+        switch (usersMapV3.get(userId)) {
           case (null) { Runtime.trap("User not found") };
           case (?user) {
             if (user.walletBalance < amount) {
@@ -786,11 +856,12 @@ actor {
             };
             walletsMap.add(txId, tx);
 
+            // Fix: use Nat.sub to avoid Nat subtraction warning
             let updatedUser = {
               user with
-              walletBalance = user.walletBalance - amount;
+              walletBalance = Nat.sub(user.walletBalance, amount);
             };
-            usersMapV2.add(userId, updatedUser);
+            usersMapV3.add(userId, updatedUser);
 
             txId;
           };
@@ -817,7 +888,7 @@ actor {
     };
 
     var users : [UserDto] = [];
-    for ((_, user) in usersMapV2.entries()) {
+    for ((_, user) in usersMapV3.entries()) {
       users := users.concat([toUserDto(user)]);
     };
     users;
@@ -829,11 +900,11 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (usersMapV2.get(userId)) {
+    switch (usersMapV3.get(userId)) {
       case (null) { Runtime.trap("User not found") };
       case (?user) {
         let updatedUser = { user with isActive = isActive };
-        usersMapV2.add(userId, updatedUser);
+        usersMapV3.add(userId, updatedUser);
       };
     };
   };
@@ -865,13 +936,13 @@ actor {
         walletsMap.add(txId, updatedTx);
 
         if (not approved) {
-          switch (usersMapV2.get(tx.userId)) {
+          switch (usersMapV3.get(tx.userId)) {
             case (?user) {
               let updatedUser = {
                 user with
                 walletBalance = user.walletBalance + tx.amount;
               };
-              usersMapV2.add(tx.userId, updatedUser);
+              usersMapV3.add(tx.userId, updatedUser);
             };
             case (null) {};
           };
@@ -891,11 +962,11 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    let totalUsers = usersMapV2.size();
-    let totalPlansSold = usersMapV2.size();
+    let totalUsers = usersMapV3.size();
+    let totalPlansSold = usersMapV3.size();
     
     var totalIncomeDistributed = 0;
-    for ((_, user) in usersMapV2.entries()) {
+    for ((_, user) in usersMapV3.entries()) {
       totalIncomeDistributed += user.totalIncome;
     };
 
@@ -967,10 +1038,10 @@ actor {
         paymentsMap.add(paymentId, updatedPayment);
 
         if (verified) {
-          switch (usersMapV2.get(payment.userId)) {
+          switch (usersMapV3.get(payment.userId)) {
             case (?user) {
               let updatedUser = { user with isActive = true };
-              usersMapV2.add(payment.userId, updatedUser);
+              usersMapV3.add(payment.userId, updatedUser);
             };
             case (null) {};
           };
@@ -1043,15 +1114,15 @@ actor {
     left : ?UserDto;
     right : ?UserDto;
   } {
-    switch (usersMapV2.get(userId)) {
+    switch (usersMapV3.get(userId)) {
       case (null) { null };
       case (?user) {
         let leftUser = switch (user.leftChildId) {
-          case (?leftId) { usersMapV2.get(leftId).map(toUserDto) };
+          case (?leftId) { usersMapV3.get(leftId).map(toUserDto) };
           case (null) { null };
         };
         let rightUser = switch (user.rightChildId) {
-          case (?rightId) { usersMapV2.get(rightId).map(toUserDto) };
+          case (?rightId) { usersMapV3.get(rightId).map(toUserDto) };
           case (null) { null };
         };
         ?{
@@ -1147,7 +1218,7 @@ actor {
           };
         };
 
-        usersMapV2.get(userId);
+        usersMapV3.get(userId);
       };
     };
   };
@@ -1170,11 +1241,11 @@ actor {
           case (null) { Runtime.trap("Unauthorized: Session not linked to caller") };
         };
 
-        switch (usersMapV2.get(userId)) {
+        switch (usersMapV3.get(userId)) {
           case (null) { Runtime.trap("User not found") };
           case (?user) {
             let updatedUser = { user with fullName = fullName };
-            usersMapV2.add(userId, updatedUser);
+            usersMapV3.add(userId, updatedUser);
           };
         };
       };
@@ -1208,7 +1279,7 @@ actor {
     };
 
     var result : [UserRegistrationDto] = [];
-    for ((_, user) in usersMapV2.entries()) {
+    for ((_, user) in usersMapV3.entries()) {
       let planName = switch (plansMap.get(user.planId)) {
         case (?plan) { plan.name };
         case (null) { "Unknown" };
@@ -1240,7 +1311,7 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (usersMapV2.get(userId)) {
+    switch (usersMapV3.get(userId)) {
       case (null) { Runtime.trap("User not found") };
       case (?user) {
         if (approved) {
@@ -1249,7 +1320,7 @@ actor {
             isActive = true;
             paymentStatus = #approved;
           };
-          usersMapV2.add(userId, updatedUser);
+          usersMapV3.add(userId, updatedUser);
 
           switch (plansMap.get(user.planId)) {
             case (?plan) {
@@ -1265,8 +1336,38 @@ actor {
             isActive = false;
             paymentStatus = #rejected;
           };
-          usersMapV2.add(userId, updatedUser);
+          usersMapV3.add(userId, updatedUser);
         };
+      };
+    };
+  };
+
+  // 25. Admin Update User
+  public shared ({ caller }) func adminUpdateUser(userId : UserId, fullName : Text, mobile : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    switch (usersMapV3.get(userId)) {
+      case (null) { Runtime.trap("User not found") };
+      case (?user) {
+        let updatedUser = { user with fullName = fullName; mobile = mobile };
+        usersMapV3.add(userId, updatedUser);
+      };
+    };
+  };
+
+  // 26. Admin Delete User
+  // Fix: use remove() instead of deprecated delete()
+  public shared ({ caller }) func adminDeleteUser(userId : UserId) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    switch (usersMapV3.get(userId)) {
+      case (null) { Runtime.trap("User not found") };
+      case (?_) {
+        ignore usersMapV3.remove(userId);
       };
     };
   };

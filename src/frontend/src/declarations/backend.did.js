@@ -194,8 +194,8 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'loginUserByMobile' : IDL.Func([IDL.Text, IDL.Text], [SessionToken], []),
   'registerUser' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat],
-      [SessionToken],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Text],
       [],
     ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
@@ -400,8 +400,8 @@ export const idlFactory = ({ IDL }) => {
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'loginUserByMobile' : IDL.Func([IDL.Text, IDL.Text], [SessionToken], []),
     'registerUser' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Nat],
-        [SessionToken],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Text],
         [],
       ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
