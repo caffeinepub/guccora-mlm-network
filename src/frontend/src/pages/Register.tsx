@@ -33,6 +33,8 @@ const PAYMENT_INSTRUCTIONS = [
   "Upload your payment screenshot",
 ];
 
+const TEST_OTP = "1234";
+
 export function RegisterPage() {
   const navigate = useNavigate();
   const refCode = new URLSearchParams(window.location.search).get("ref") ?? "";
@@ -79,17 +81,13 @@ export function RegisterPage() {
       toast.error("Passwords do not match");
       return;
     }
+    // Test OTP mode: skip external SMS, go directly to OTP step
     setOtpLoading(true);
-    try {
-      const actor = await createActorWithConfig();
-      await actor.sendOTP(mobile);
-      setStep(2);
-      toast.success("OTP sent to your mobile number");
-    } catch {
-      toast.error("Failed to send OTP. Please try again.");
-    } finally {
+    setTimeout(() => {
       setOtpLoading(false);
-    }
+      setStep(2);
+      toast.success("OTP sent! Use test OTP: 1234");
+    }, 500);
   };
 
   const handleVerifyOtp = async () => {
@@ -98,33 +96,19 @@ export function RegisterPage() {
       return;
     }
     setOtpLoading(true);
-    try {
-      const actor = await createActorWithConfig();
-      const result = await actor.verifyOTP(mobile, otp);
-      if (result) {
+    setTimeout(() => {
+      setOtpLoading(false);
+      if (otp === TEST_OTP) {
         setStep(3);
         toast.success("Mobile number verified!");
       } else {
-        toast.error("Invalid OTP. Please try again.");
+        toast.error("Invalid OTP. Use test OTP: 1234");
       }
-    } catch {
-      toast.error("OTP verification failed. Please try again.");
-    } finally {
-      setOtpLoading(false);
-    }
+    }, 400);
   };
 
-  const handleResendOtp = async () => {
-    setOtpLoading(true);
-    try {
-      const actor = await createActorWithConfig();
-      await actor.sendOTP(mobile);
-      toast.success("OTP resent to your mobile number");
-    } catch {
-      toast.error("Failed to resend OTP.");
-    } finally {
-      setOtpLoading(false);
-    }
+  const handleResendOtp = () => {
+    toast.success("OTP resent! Use test OTP: 1234");
   };
 
   const handleStep3 = () => {
@@ -466,12 +450,26 @@ export function RegisterPage() {
                   Verify Mobile
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Enter the OTP sent to{" "}
+                  Enter the OTP for{" "}
                   <span className="text-foreground font-semibold">
                     {mobile}
                   </span>
                 </p>
               </div>
+
+              {/* Test OTP notice */}
+              <div
+                data-ocid="register.test_otp.panel"
+                className="bg-green-500/15 border border-green-500/40 rounded-xl px-4 py-3 text-center"
+              >
+                <p className="text-sm font-bold text-green-400">
+                  Test OTP: 1234
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  SMS is disabled in test mode. Enter 1234 to continue.
+                </p>
+              </div>
+
               <div>
                 <Label className="text-sm text-foreground/80 mb-1.5 block text-center">
                   Enter 4-digit OTP
