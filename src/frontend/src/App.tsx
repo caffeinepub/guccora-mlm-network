@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import {
   Outlet,
   RouterProvider,
+  createHashHistory,
   createRootRoute,
   createRoute,
   createRouter,
@@ -30,6 +31,9 @@ import { AdminSettingsPage } from "./pages/admin/AdminSettings";
 import { AdminTreePage } from "./pages/admin/AdminTree";
 import { AdminUsersPage } from "./pages/admin/AdminUsers";
 import { AdminWithdrawalsPage } from "./pages/admin/AdminWithdrawals";
+
+// Use hash history so ICP canister serves all routes from index.html
+const hashHistory = createHashHistory();
 
 // Root
 const rootRoute = createRootRoute({
@@ -104,7 +108,7 @@ const profileRoute = createRoute({
   component: ProfilePage,
 });
 
-// Admin layout route
+// Admin layout route (protected)
 const adminLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "admin-layout",
@@ -227,7 +231,7 @@ const routeTree = rootRoute.addChildren([
   ]),
 ]);
 
-const router = createRouter({ routeTree });
+const router = createRouter({ routeTree, history: hashHistory });
 
 declare module "@tanstack/react-router" {
   interface Register {
